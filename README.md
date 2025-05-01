@@ -2,13 +2,13 @@
 *2025 Linux Project Haute Ecole En Hainaut*
 
 ## Team
-Our team is made of two Bac2 Student in CyberSecurity option
+Our team is made of two Bac2 Student in CyberSecurity option  
 - Kozlenko Anastasiia
 - Deneyer Tom
 
 ## Hardware configuration
 Our project is based on multiple virtual machines located in AWS Cloud (EC2)  
-Here is a list of our virtual machines
+Here is a list of our virtual machines  
 - DNS Server
 - FTP + Web Server
 - Time + ... Server
@@ -18,6 +18,7 @@ Here is a list of our virtual machines
 
 ## Project structure
 Here is how files are saved into thi repository, scripts, configs and docs... 
+```text
     / (repo root)
     ├── README.md                          # You are Here
     ├── setup_env.sh
@@ -35,9 +36,9 @@ Here is how files are saved into thi repository, scripts, configs and docs...
     │   └── ftp/
     │       └── vsftpd.conf
     ├── docs/
-
+```
 ### Environment Script
-`setup_env.sh` is a bash script exporting all environments variables used in all other scripts, such as
+`setup_env.sh` is a bash script exporting all environments variables used in all other scripts, such as:   
 - Network configurations
 - Paths to important folders & files
 - Names used
@@ -47,7 +48,7 @@ Here is how files are saved into thi repository, scripts, configs and docs...
 All executable scripts must be placed into the `/scripts/` in this repository.  
 Bash scripts can be executed on any virtual machines used during the projet.
 
-Types of script:
+Types of script:   
 - setup_*service* : Full configuration of a *service* specified after the `setup_`  
 - utils_*action* : Scripts used for specific automated *action* specified after the `utils_`
 - automation_*action* : Scripts used by automaticly making an *action* not run by hand. specified after the `automation_`
