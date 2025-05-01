@@ -64,17 +64,25 @@ Reports, design docs, ressources and others...
 ## Bible
 ### Files and variables
 Folders, files, simple variables and others must use *snake_case* convention. For instance:
-    **OKAY**  
-    `my_local_variable`, `/home/my_first_user_here/his_personal_folder/`, `/backup/backup_name`
-    **NOT OKAY**
-    `myLocalVariable`, `/home/MYFIRSTUSERHERE/HisPersonalFolder`, `/BACKUP/backup-name`
-
+**OKAY**   
+- `my_local_variable`
+- `/home/my_first_user_here/his_personal_folder/`
+- `/backup/backup_name`
+**NOT OKAY**    
+- `myLocalVariable`
+- `/home/MYFIRSTUSERHERE/HisPersonalFolder`
+- `/BACKUP/backup-name`   
+   
 Environment variables exported must be *UPPER_SNAKE_CASE* convention. For instance:
-    **OKAY**
-    `MY_VARIABLE`,`SSH_PORT`,`IPV4_GATEWAY`
-    **NOT OKAY**
-    `my_variable`,`sshPort`,`Ipv4Gateway`
-
+**OKAY**    
+- `MY_VARIABLE`
+- `SSH_PORT`
+- `IPV4_GATEWAY`   
+**NOT OKAY**
+- `my_variable`
+- `sshPort` 
+- `Ipv4Gateway`   
+   
 ### Git/Github
 Commit must follow regular angular commit convention, please follow the link bellow for futher informations  
 [Angular Commit Convention](https://www.conventionalcommits.org/en/v1.0.0-beta.4/)
