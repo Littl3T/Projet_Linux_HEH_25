@@ -36,6 +36,7 @@ Here is how files are saved into thi repository, scripts, configs and docs...
     │   └── ftp/
     │       └── vsftpd.conf
     ├── docs/
+    │   ├── ressources.md
 ```
 ### Environment Script
 `setup_env.sh` is a bash script exporting all environments variables used in all other scripts, such as:   
@@ -67,7 +68,7 @@ Folders, files, simple variables and others must use *snake_case* convention. Fo
 **OKAY**   
 - `my_local_variable`
 - `/home/my_first_user_here/his_personal_folder/`
-- `/backup/backup_name`
+- `/backup/backup_name`   
 **NOT OKAY**    
 - `myLocalVariable`
 - `/home/MYFIRSTUSERHERE/HisPersonalFolder`

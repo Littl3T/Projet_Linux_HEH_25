@@ -1,2 +1,2 @@
 # List of all ressources used
-- chatgpt
+- [chatgpt](https://chatgpt.com/)
