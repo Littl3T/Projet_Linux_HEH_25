@@ -10,9 +10,7 @@ export TZ="Europe/Brussels"          # VM timezone
 ###################################
 # 1.  VPC & network layout        #
 ###################################
-export VPC_CIDR="10.0.0.0/16"
-export PUBLIC_SUBNET_CIDR="10.0.0.0/24"
-export PRIVATE_SUBNET_CIDR="10.0.1.0/24"
+export PRIVATE_SUBNET_CIDR="172.31.0.0/20"
 
 ###################################
 # 2.  Bastion host (public SSH)   #
@@ -76,7 +74,7 @@ export SG_CA="sg-ca"
 export SG_BASTION="sg-bastion"
 
 ###################################
-# 9.  Constant ports (don’t edit) #
+# 9.  Constant ports              #
 ###################################
 export PORT_DNS="53"
 export PORT_WEB_HTTPS="443"
