@@ -56,6 +56,56 @@ sudo mkdir -p "$USERDIR"
 sudo chown "$USERNAME:$USERNAME" "$USERDIR"
 sudo chmod 755 "$USERDIR"
 
+echo "[+] Ajout de page d’accueil personnalisée"
+sudo tee "$USERDIR/index.html" > /dev/null <<'HTML'
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Bienvenue sur tomananas.lan</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+      color: #2d3436;
+      text-align: center;
+      padding: 50px;
+    }
+    .ascii {
+      font-family: monospace;
+      white-space: pre;
+      color: #d35400;
+      margin-bottom: 20px;
+    }
+    .box {
+      background: #ffffffaa;
+      padding: 20px;
+      border-radius: 15px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Bienvenue sur <strong>tomananas.lan</strong> !</h1>
+    <p>Votre site est hébergé avec amour par Tom & Anastasiia.</p>
+    <h2>💡 Pour publier votre propre site :</h2>
+    <p>Connectez-vous via <strong>FileZilla</strong> avec les informations que vous avez reçues :</p>
+    <ul style="list-style: none; padding: 0;">
+      <li><strong>Hôte :</strong> l’adresse IP du serveur</li>
+      <li><strong>Port :</strong> 21</li>
+      <li><strong>Protocole :</strong> FTP - TLS explicite</li>
+      <li><strong>Identifiant :</strong> $USERNAME</li>
+      <li><strong>Mot de passe :</strong> (fourni par email)</li>
+    </ul>
+    <p>Vos fichiers doivent être déposés dans ce dossier.<br>Ce message disparaîtra lorsque vous le remplacerez par votre propre <code>index.html</code> ou <code>index.php</code>.</p>
+  </div>
+</body>
+</html>
+HTML
+
+sudo chown "$USERNAME:$USERNAME" "$USERDIR/index.html"
+
 echo "[+] Configuration du VirtualHost Apache"
 sudo mkdir -p /etc/httpd/sites-available /etc/httpd/sites-enabled
 sudo tee /etc/httpd/sites-available/$USERNAME.conf > /dev/null <<VHCONF
