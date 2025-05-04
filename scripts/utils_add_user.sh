@@ -1,8 +1,11 @@
 #!/bin/bash
 
 # === Configuration ===
-WEB_SERVER="172.31.10.47"             # IP ou nom DNS du serveur web+ftp
-SQL_SERVER="172.31.7.29"              # IP ou nom DNS du serveur MySQL
+WEB_SERVER="172.31.10.47"             # IP privée du serveur web+ftp
+SQL_SERVER="172.31.7.29"              # IP privée du serveur MySQL
+DNS_SERVER="172.31.5.243"             # IP privée du serveur DNS
+PUBLIC_WEB_IP="13.49.221.174"         # IP publique du serveur web
+
 SQL_ADMIN_USER="admin"
 SQL_ADMIN_PWD="AdminStrongPwd!2025"
 
@@ -91,6 +94,47 @@ EOF
 
 echo "✅ Base de données $SQL_DB et utilisateur $SQL_USER créés sur le serveur SQL"
 
+# === Déclaration DNS sur serveur DNS ===
+DNS_ZONE_FILE="/var/named/forward.tomananas.lan"
+
+echo "🌐 Connexion à $DNS_SERVER pour ajouter l’entrée DNS $USERNAME.tomananas.lan → $PUBLIC_WEB_IP"
+
+ssh ec2-user@$DNS_SERVER "sudo bash -s" <<EOF
+ZONEDIR="$DNS_ZONE_FILE"
+TMPFILE=\$(mktemp)
+
+# Lire le fichier, incrémenter le serial, conserver tout le reste
+sudo awk '
+  BEGIN { serial_updated = 0 }
+  /^\$TTL/ { print; next }
+  /[0-9]+[[:space:]]*;[[:space:]]*Serial/ && !serial_updated {
+    serial = \$1 + 1
+    print "        " serial " ; Serial"
+    serial_updated = 1
+    next
+  }
+  { print }
+' "\$ZONEDIR" > "\$TMPFILE"
+
+# Ajouter la ligne DNS (sans supprimer les autres)
+echo "$USERNAME IN A $PUBLIC_WEB_IP" | sudo tee -a "\$TMPFILE" > /dev/null
+
+# Vérifier que la zone est valide
+sudo named-checkzone tomananas.lan "\$TMPFILE"
+if [ \$? -ne 0 ]; then
+  echo "❌ Zone invalide, annulation"
+  rm -f "\$TMPFILE"
+  exit 1
+fi
+
+# Remplacer le fichier de zone uniquement si tout est OK
+sudo mv "\$TMPFILE" "\$ZONEDIR"
+sudo chown named:named "\$ZONEDIR"
+sudo systemctl restart named
+EOF
+
+echo "✅ Enregistrement DNS ajouté pour $USERNAME.tomananas.lan → $PUBLIC_WEB_IP"
+
 # === Résumé ===
 echo "🎉 Client $USERNAME ajouté avec succès !"
 echo "🔐 Informations de connexion :"
@@ -102,3 +146,4 @@ echo "    Hôte         : $SQL_SERVER"
 echo "    Base         : $SQL_DB"
 echo "    Utilisateur  : $SQL_USER"
 echo "    Mot de passe : $SQL_PWD"
+echo "🌍 DNS : $USERNAME.tomananas.lan → $PUBLIC_WEB_IP"
