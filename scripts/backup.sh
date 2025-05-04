@@ -46,9 +46,8 @@ backup_host() {
 }
 
 # === Dump MySQL compressé ===
-echo "🗄️ Dump MySQL de $DB_HOST..."
 ssh -i "$SSH_KEY" "$REMOTE_USER@$DB_HOST" \
-"mysqldump --all-databases" \
+"mysqldump -u admin -p'AdminStrongPwd!2025' --all-databases" \
 | gzip > "$DB_DUMP"
 
 if [[ ! -s "$DB_DUMP" ]]; then
