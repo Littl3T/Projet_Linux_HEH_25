@@ -4,7 +4,7 @@
 # 0.  Global project identifiers  #
 ###################################
 export PROJ_NAME="linux_heh_25"      # Used in tags & resource names
-export PROJ_DOMAIN="hehlinux.lan"    # DNS zone
+export PROJ_DOMAIN="tomananas.lan"   # DNS zone
 export TZ="Europe/Brussels"          # VM timezone
 
 ###################################
@@ -22,19 +22,18 @@ export BASTION_PRIVATE_IP="10.0.0.10"
 ###################################
 # 3.  DNS server (Bind)           #
 ###################################
-export DNS_HOSTNAME="dns-01"
-export DNS_PRIVATE_IP="10.0.1.3"
-export DNS_PUBLIC_IP="198.51.100.20"       # optionnel, sinon laisse vide
-export DNS_FWD_ZONE="${PROJ_DOMAIN}"
-export DNS_REV_ZONE="1.0.10.in-addr.arpa"
-export DNS_SERIAL="$(date +%s)"
+export DNS_HOSTNAME="dns-ntp-01"
+export DNS_PRIVATE_IP="172.31.15.99"
+export DNS_PUBLIC_IP="13.53.60.206"
+export DNS_DOMAIN="${PROJ_DOMAIN}"
+export ZONE_DIR="/var/named"
 
 ###################################
 # 4.  Web server (HTTPS)          #
 ###################################
-export WEB_HOSTNAME="web-01"
+export WEB_HOSTNAME="web-ftp-04"
 export WEB_PRIVATE_IP="10.0.1.4"
-export WEB_PUBLIC_IP="198.51.100.30"
+export WEB_PUBLIC_IP="13.49.221.174"
 export WEB_DOCROOT="/var/www/html"
 
 ###################################
