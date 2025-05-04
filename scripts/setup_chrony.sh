@@ -1,13 +1,13 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
 # Load variables from .env
-if [ -f "setup_env.sh" ]; then
-    export $(grep -v '^#' setup_env.sh | xargs)
+if [ ! -f "setup_env.sh" ]; then
+  echo "❌ setup_env.sh file not found. Create one with the necessary variables."
+  exit 1
 else
-    echo "❌ setup_env.sh file not found."
-    exit 1
+  source setup_env.sh
 fi
 
 echo "🕒 Setting up Chrony NTP server..."
