@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Script de déploiement FTP sécurisé (FTPS) avec vsftpd et HTTPD
+# Script de déploiement FTP sécurisé (FTPS) avec vsftpd, HTTPD et PHP
 # Chroot des utilisateurs dans /srv/www/$USER
 # Compatible FileZilla avec TLS explicite
 
 set -e
 
-echo "[+] Installation des paquets nécessaires"
-dnf install -y vsftpd openssl firewalld httpd
+echo "[+] Installation des paquets nécessaires (vsftpd, httpd, PHP)"
+dnf install -y vsftpd openssl firewalld httpd php php-mysqlnd php-mbstring php-xml php-cli php-common
 
 echo "[+] Activation du pare-feu et des ports nécessaires"
 systemctl enable --now firewalld
@@ -52,7 +52,7 @@ ssl_sslv3=NO
 pasv_enable=YES
 pasv_min_port=40000
 pasv_max_port=40100
-pasv_address=13.53.136.242
+pasv_address=13.49.221.174
 pam_service_name=vsftpd
 userlist_enable=NO
 EOF
@@ -65,8 +65,8 @@ if ! grep -q 'sites-enabled' /etc/httpd/conf/httpd.conf; then
   echo "IncludeOptional sites-enabled/*.conf" >> /etc/httpd/conf/httpd.conf
 fi
 
-echo "[+] Activation des services vsftpd et httpd"
+echo "[+] Redémarrage de httpd pour activer PHP"
 systemctl enable vsftpd httpd
 systemctl restart vsftpd httpd
 
-echo "[+] Déploiement FTP & HTTPD terminé."
+echo "✅ Déploiement FTP, HTTPD & PHP terminé."
