@@ -71,6 +71,13 @@ fi
 
 sudo firewall-cmd --reload
 
+echo "[+] Configuration du user de backup"
+sudo useradd -m -s /bin/bash backup 2>/dev/null || echo "User 'backup' already exists"
+sudo mkdir -p /home/backup/.ssh
+sudo chmod 700 /home/backup/.ssh
+sudo cp /home/ec2-user/.ssh/authorized_keys /home/backup/.ssh/authorized_keys 
+sudo chown -R backup:backup /home/backup/.ssh
+
 # Mot de passe root
 echo "[+] Définition du mot de passe root par défaut"
 echo "root:$ROOT_DEFAULT_PASSWORD" | sudo chpasswd
