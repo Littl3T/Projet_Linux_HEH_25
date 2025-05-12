@@ -54,8 +54,8 @@ if [ "$SQL_PWD" != "$SQL_PWD_CONFIRM" ]; then
     exit 1
 fi
 
-# === Création utilisateur sur serveur Web+FTP ===
-echo "📡 Connexion à $WEB_PRIVATE_IP pour créer l’utilisateur système et le VirtualHost…"
+# === Création utilisateur sur serveur Web+FTP + vhosts HTTP/HTTPS ===
+echo "📡 Connexion à $WEB_PRIVATE_IP pour créer l’utilisateur et les vhosts…"
 ssh -i "$SSH_KEY" ec2-user@"$WEB_PRIVATE_IP" bash -s <<EOF
 echo "[+] Création de l'utilisateur Linux $USERNAME"
 sudo useradd -m "$USERNAME"
@@ -102,9 +102,12 @@ sudo tee "$USERDIR/index.html" > /dev/null <<'HTML'
 HTML
 sudo chown "$USERNAME:$USERNAME" "$USERDIR/index.html"
 
-echo "[+] Configuration du VirtualHost Apache"
+echo "[+] Préparation des répertoires de vhosts"
 sudo mkdir -p /etc/httpd/sites-available /etc/httpd/sites-enabled
-sudo tee /etc/httpd/sites-available/$USERNAME.conf > /dev/null <<VHCONF
+
+# --- HTTP vhost ---
+echo "[+] Création du VirtualHost HTTP"
+sudo tee /etc/httpd/sites-available/$USERNAME.conf > /dev/null <<VH
 <VirtualHost *:80>
     ServerName $USERNAME.tomananas.lan
     DocumentRoot $USERDIR
@@ -116,11 +119,36 @@ sudo tee /etc/httpd/sites-available/$USERNAME.conf > /dev/null <<VHCONF
     ErrorLog /var/log/httpd/${USERNAME}_error.log
     CustomLog /var/log/httpd/${USERNAME}_access.log combined
 </VirtualHost>
-VHCONF
+VH
 
+# --- HTTPS vhost ---
+echo "[+] Création du VirtualHost HTTPS"
+# ajoute Listen 443 si pas déjà présent
+sudo grep -q '^Listen 443' /etc/httpd/conf/httpd.conf \
+  || echo 'Listen 443' | sudo tee -a /etc/httpd/conf/httpd.conf
+
+sudo tee /etc/httpd/sites-available/${USERNAME}-ssl.conf > /dev/null <<VHSSL
+<VirtualHost *:443>
+    ServerName $USERNAME.tomananas.lan
+    DocumentRoot $USERDIR
+    SSLEngine on
+    SSLCertificateFile      /etc/pki/tls/certs/vsftpd.pem
+    SSLCertificateKeyFile   /etc/pki/tls/private/vsftpd.key
+    <Directory "$USERDIR">
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    ErrorLog  /var/log/httpd/${USERNAME}_ssl_error.log
+    CustomLog /var/log/httpd/${USERNAME}_ssl_access.log combined
+</VirtualHost>
+VHSSL
+
+echo "[+] Activation des vhosts"
 sudo ln -sf /etc/httpd/sites-available/$USERNAME.conf /etc/httpd/sites-enabled/
-sudo grep -q 'IncludeOptional sites-enabled/\*\.conf' /etc/httpd/conf/httpd.conf \
-  || echo 'IncludeOptional sites-enabled/*.conf' | sudo tee -a /etc/httpd/conf/httpd.conf > /dev/null
+sudo ln -sf /etc/httpd/sites-available/${USERNAME}-ssl.conf /etc/httpd/sites-enabled/
+
+echo "[+] Rechargement d’Apache pour prendre en compte HTTP & HTTPS"
 sudo systemctl reload httpd
 
  # ────────────────────────────────────────────────────────────────
@@ -137,7 +165,7 @@ sudo systemctl reload httpd
  echo "[+] Activation du compte Samba"
  sudo smbpasswd -e "$USERNAME"
 
- echo "✅ Utilisateur Linux & Samba $USERNAME créé sur le serveur Web/FTP"
+echo "✅ Utilisateur Linux & Samba $USERNAME et vhosts HTTP/HTTPS créés"
 EOF
 
 # === Création de l’utilisateur SQL ===
@@ -207,6 +235,7 @@ cat <<SUMMARY
       Base        : $SQL_DB
       Utilisateur : $SQL_USER
       Mot de passe: $SQL_PWD
-  • DNS : $USERNAME.tomananas.lan → $WEB_PRIVATE_IP
-
+  • HTTP  : http://$USERNAME.tomananas.lan
+  • HTTPS : https://$USERNAME.tomananas.lan
+  • DNS   : $USERNAME.tomananas.lan → $WEB_PRIVATE_IP
 SUMMARY
