@@ -62,7 +62,7 @@ mount -a
 echo "[+] Installation vsftpd, httpd, PHP, firewalld"
 dnf install -y vsftpd openssl firewalld httpd php php-mysqlnd php-mbstring php-xml php-cli php-common
 
-echo "[+] Activation et ouverture des ports"
+echo "[+] Activation et ouverture des ports HTTP/FTP"
 systemctl enable --now firewalld
 firewall-cmd --permanent --add-port=21/tcp
 firewall-cmd --permanent --add-port=40000-40100/tcp
@@ -111,11 +111,45 @@ mkdir -p /etc/httpd/sites-available /etc/httpd/sites-enabled
 grep -q '^IncludeOptional sites-enabled' /etc/httpd/conf/httpd.conf \
   || echo "IncludeOptional sites-enabled/*.conf" >> /etc/httpd/conf/httpd.conf
 
+# Désactiver le vhost SSL par défaut pour ne pas ouvrir 443 en double
+if [ -f /etc/httpd/conf.d/ssl.conf ]; then
+  mv /etc/httpd/conf.d/ssl.conf /etc/httpd/conf.d/ssl.conf.disabled
+  echo "[+] ssl.conf par défaut désactivé"
+fi
+
+# S'assurer qu'on n'a pas plusieurs Listen 443
+sed -i '/^Listen 443/d' /etc/httpd/conf/httpd.conf
+grep -qxF 'Listen 443' /etc/httpd/conf/httpd.conf \
+  || echo 'Listen 443' >> /etc/httpd/conf/httpd.conf
+
 systemctl enable --now httpd
 
 echo "[+] Ajout des droits d'accès pour le user backup"
 sudo setfacl -R -m u:backup:rx /etc/httpd/sites-available
 sudo setfacl -R -m u:backup:rx /srv/www
+
+# ────────────────────────────────────────────────────────────────
+# 2.5. VHost HTTPS global (si tu veux un site par défaut en HTTPS)
+/etc/httpd/sites-available/ssl.conf
+cat > /etc/httpd/sites-available/ssl.conf <<EOF
+<VirtualHost *:443>
+    DocumentRoot "$MOUNT_POINT"
+    SSLEngine on
+    SSLCertificateFile    /etc/pki/tls/certs/vsftpd.pem
+    SSLCertificateKeyFile /etc/pki/tls/private/vsftpd.key
+
+    <Directory "$MOUNT_POINT">
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog  /var/log/httpd/ssl_error.log
+    CustomLog /var/log/httpd/ssl_access.log combined
+</VirtualHost>
+EOF
+
+ln -sf /etc/httpd/sites-available/ssl.conf /etc/httpd/sites-enabled/ssl.conf
 
 # ────────────────────────────────────────────────────────────────
 # 3. Samba + NFS share
@@ -186,6 +220,6 @@ SERVER_IP=$(hostname -I | awk '{print $1}')
 echo ""
 echo "✅ Déploiement terminé !"
 echo "  • FTPS disponible sur port 21 (TLS exigé)"
-echo "  • HTTPD disponible sur /srv/www/<user>"
+echo "  • HTTPD disponible sur /srv/www/<user> et en HTTPS sur port 443"
 echo "  • Samba : \\\\\\$SERVER_IP\\public et \\\\\\$SERVER_IP\\www"
 echo "  • NFS : mount $SERVER_IP:$SHARED_FOLDER /mnt"

@@ -74,7 +74,7 @@ sudo tee "$USERDIR/index.html" > /dev/null <<'HTML'
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Bienvenue sur tomananas.lan</title>
+  <title>Bienvenue sur tomananas.lan <b>$USERNAME</b></title>
   <style>
     body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #ffeaa7, #fab1a0); color: #2d3436; text-align: center; padding: 50px; }
     .ascii { font-family: monospace; white-space: pre; color: #d35400; margin-bottom: 20px; }
@@ -100,7 +100,6 @@ sudo tee "$USERDIR/index.html" > /dev/null <<'HTML'
 </body>
 </html>
 HTML
-
 sudo chown "$USERNAME:$USERNAME" "$USERDIR/index.html"
 
 echo "[+] Configuration du VirtualHost Apache"
@@ -122,11 +121,24 @@ VHCONF
 sudo ln -sf /etc/httpd/sites-available/$USERNAME.conf /etc/httpd/sites-enabled/
 sudo grep -q 'IncludeOptional sites-enabled/\*\.conf' /etc/httpd/conf/httpd.conf \
   || echo 'IncludeOptional sites-enabled/*.conf' | sudo tee -a /etc/httpd/conf/httpd.conf > /dev/null
-
 sudo systemctl reload httpd
-EOF
 
-echo "✅ Utilisateur Linux $USERNAME créé sur le serveur Web/FTP"
+ # ────────────────────────────────────────────────────────────────
+ # Partie Samba : création du compte Samba et activation
+ # ────────────────────────────────────────────────────────────────
+ echo "[+] Création/utilisateur Samba pour $USERNAME"
+ if sudo pdbedit -L | grep -q "^$USERNAME:"; then
+   echo "⚠️ Samba user $USERNAME already exists."
+ else
+   echo "[+] Définition non-interactive du mot de passe Samba pour $USERNAME"
+   # on réutilise ici le même mot de passe que pour FTP, stocké dans $FTP_PWD
+   printf "%s\n%s\n" "$FTP_PWD" "$FTP_PWD" | sudo smbpasswd -s -a "$USERNAME"
+ fi
+ echo "[+] Activation du compte Samba"
+ sudo smbpasswd -e "$USERNAME"
+
+ echo "✅ Utilisateur Linux & Samba $USERNAME créé sur le serveur Web/FTP"
+EOF
 
 # === Création de l’utilisateur SQL ===
 echo "🗄 Connexion à $BACKEND_PRIVATE_IP pour créer la base SQL et l’utilisateur…"
