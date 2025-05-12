@@ -38,7 +38,16 @@ export SMB_CONF="/etc/samba/smb.conf"
 export EXPORTS_FILE="/etc/exports"
 export SHARED_GROUP="publicshare"
 ###################################
-# 6.  Backend server (mysql)      #
+# 7.  Backend server (mysql)      #
 ###################################
 export BACKEND_HOSTNAME="mysql-01"
 export BACKEND_PRIVATE_IP="10.42.0.170"
+###################################
+# 8.  NFS client autofs           #
+###################################
+NFS_PRIVATE_IP="10.42.0.207"
+MOUNT_ROOT="/mnt/nfs"
+MOUNT_NAME="share"  
+TIMEOUT=60
+AUTO_MASTER="/etc/auto.master"
+AUTO_MAP="/etc/auto.nfs"
