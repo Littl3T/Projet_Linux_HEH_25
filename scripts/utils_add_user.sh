@@ -1,27 +1,28 @@
 #!/bin/bash
 
 # Chargement des variables d'environnement
-if [ ! -f "setup_env.sh" ]; then
-  echo "❌ setup_env.sh introuvable. Crée-le avec ces variables :"
+if [ ! -f "/root/setup_env.sh" ]; then
+  echo "❌ /root/setup_env.sh introuvable. Crée-le avec ces variables :"
   echo "   WEB_PRIVATE_IP, BACKEND_PRIVATE_IP, DNS_PRIVATE_IP"
   exit 1
 fi
-source setup_env.sh
+source /root/setup_env.sh
 
-#   enlève tout \r traînant dans tes variables
+# Supprime les \r éventuels
 for var in WEB_PRIVATE_IP BACKEND_PRIVATE_IP DNS_PRIVATE_IP; do
   eval "$var"="${!var//$'\r'/}"
 done
 
-: "\${WEB_PRIVATE_IP:?}"
-: "\${BACKEND_PRIVATE_IP:?}"
-: "\${DNS_PRIVATE_IP:?}"
+: "${WEB_PRIVATE_IP:?}"
+: "${BACKEND_PRIVATE_IP:?}"
+: "${DNS_PRIVATE_IP:?}"
 
 SQL_ADMIN_USER="admin"
 SQL_ADMIN_PWD="AdminStrongPwd!2025"
+SSH_KEY="/root/labsuser.pem"
 
 # === Vérification des arguments ===
-if [ -z "$1" ]; then
+if [ -z "${1:-}" ]; then
     echo "❌ Utilisation : $0 <nom_utilisateur>"
     exit 1
 fi
@@ -55,7 +56,7 @@ fi
 
 # === Création utilisateur sur serveur Web+FTP ===
 echo "📡 Connexion à $WEB_PRIVATE_IP pour créer l’utilisateur système et le VirtualHost…"
-ssh ec2-user@$WEB_PRIVATE_IP bash -s <<EOF
+ssh -i "$SSH_KEY" ec2-user@"$WEB_PRIVATE_IP" bash -s <<EOF
 echo "[+] Création de l'utilisateur Linux $USERNAME"
 sudo useradd -m "$USERNAME"
 
@@ -75,25 +76,9 @@ sudo tee "$USERDIR/index.html" > /dev/null <<'HTML'
   <meta charset="UTF-8">
   <title>Bienvenue sur tomananas.lan</title>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #ffeaa7, #fab1a0);
-      color: #2d3436;
-      text-align: center;
-      padding: 50px;
-    }
-    .ascii {
-      font-family: monospace;
-      white-space: pre;
-      color: #d35400;
-      margin-bottom: 20px;
-    }
-    .box {
-      background: #ffffffaa;
-      padding: 20px;
-      border-radius: 15px;
-      display: inline-block;
-    }
+    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #ffeaa7, #fab1a0); color: #2d3436; text-align: center; padding: 50px; }
+    .ascii { font-family: monospace; white-space: pre; color: #d35400; margin-bottom: 20px; }
+    .box { background: #ffffffaa; padding: 20px; border-radius: 15px; display: inline-block; }
   </style>
 </head>
 <body>
@@ -109,7 +94,8 @@ sudo tee "$USERDIR/index.html" > /dev/null <<'HTML'
       <li><strong>Identifiant :</strong> $USERNAME</li>
       <li><strong>Mot de passe :</strong> (fourni par email)</li>
     </ul>
-    <p>Vos fichiers doivent être déposés dans ce dossier.<br>Ce message disparaîtra lorsque vous le remplacerez par votre propre <code>index.html</code> ou <code>index.php</code>.</p>
+    <p>Vos fichiers doivent être déposés dans ce dossier.<br>
+       Ce message disparaîtra lorsque vous le remplacerez par votre propre index.</p>
   </div>
 </body>
 </html>
@@ -134,8 +120,8 @@ sudo tee /etc/httpd/sites-available/$USERNAME.conf > /dev/null <<VHCONF
 VHCONF
 
 sudo ln -sf /etc/httpd/sites-available/$USERNAME.conf /etc/httpd/sites-enabled/
-sudo grep -q 'IncludeOptional sites-enabled/\*\.conf' /etc/httpd/conf/httpd.conf || \
-  echo 'IncludeOptional sites-enabled/*.conf' | sudo tee -a /etc/httpd/conf/httpd.conf > /dev/null
+sudo grep -q 'IncludeOptional sites-enabled/\*\.conf' /etc/httpd/conf/httpd.conf \
+  || echo 'IncludeOptional sites-enabled/*.conf' | sudo tee -a /etc/httpd/conf/httpd.conf > /dev/null
 
 sudo systemctl reload httpd
 EOF
@@ -144,8 +130,8 @@ echo "✅ Utilisateur Linux $USERNAME créé sur le serveur Web/FTP"
 
 # === Création de l’utilisateur SQL ===
 echo "🗄 Connexion à $BACKEND_PRIVATE_IP pour créer la base SQL et l’utilisateur…"
-ssh ec2-user@$BACKEND_PRIVATE_IP bash -s <<EOF
-sudo mysql -u$SQL_ADMIN_USER -p$SQL_ADMIN_PWD <<MYSQL
+ssh -i "$SSH_KEY" ec2-user@"$BACKEND_PRIVATE_IP" bash -s <<EOF
+sudo mysql -u"$SQL_ADMIN_USER" -p"$SQL_ADMIN_PWD" <<MYSQL
 CREATE DATABASE IF NOT EXISTS \\\`$SQL_DB\\\`;
 CREATE USER IF NOT EXISTS '$SQL_USER'@'%' IDENTIFIED BY '$SQL_PWD';
 GRANT ALL PRIVILEGES ON \\\`$SQL_DB\\\`.* TO '$SQL_USER'@'%';
@@ -156,11 +142,11 @@ EOF
 echo "✅ Base de données $SQL_DB et utilisateur $SQL_USER créés sur le serveur SQL"
 
 # === Déclaration DNS sur serveur DNS ===
-DNS_ZONE_FILE="/var/named/forward.tomananas.lan"
+DNS_ZONE_FILE="$ZONE_DIR/forward.tomananas.lan"
 
 echo "🌐 Connexion à $DNS_PRIVATE_IP pour ajouter l’entrée DNS $USERNAME.tomananas.lan → $WEB_PRIVATE_IP"
 
-ssh ec2-user@$DNS_PRIVATE_IP "sudo bash -s" <<EOF
+ssh -i "$SSH_KEY" ec2-user@$DNS_PRIVATE_IP "sudo bash -s" <<EOF
 ZONEDIR="$DNS_ZONE_FILE"
 TMPFILE=\$(mktemp)
 
@@ -198,13 +184,17 @@ echo "✅ Enregistrement DNS ajouté pour $USERNAME.tomananas.lan → $WEB_PRIVA
 
 # === Résumé ===
 echo "🎉 Client $USERNAME ajouté avec succès !"
-echo "🔐 Informations de connexion :"
-echo "🖥 FTP (serveur Web) :"
-echo "    Utilisateur : $USERNAME"
-echo "    Mot de passe : (défini manuellement)"
-echo "🗄 MySQL (phpMyAdmin) :"
-echo "    Hôte         : $BACKEND_PRIVATE_IP"
-echo "    Base         : $SQL_DB"
-echo "    Utilisateur  : $SQL_USER"
-echo "    Mot de passe : $SQL_PWD"
-echo "🌍 DNS : $USERNAME.tomananas.lan → $WEB_PRIVATE_IP"
+cat <<SUMMARY
+
+🔐 Connexions :
+  • FTP (serveur Web) : 
+      Utilisateur : $USERNAME
+      Mot de passe : (votre saisie)
+  • SQL (phpMyAdmin) : 
+      Hôte        : $BACKEND_PRIVATE_IP
+      Base        : $SQL_DB
+      Utilisateur : $SQL_USER
+      Mot de passe: $SQL_PWD
+  • DNS : $USERNAME.tomananas.lan → $WEB_PRIVATE_IP
+
+SUMMARY

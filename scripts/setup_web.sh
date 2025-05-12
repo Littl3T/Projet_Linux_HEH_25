@@ -20,6 +20,7 @@ source /root/setup_env.sh
 : "${SMB_CONF:?SMB_CONF non défini}"
 : "${EXPORTS_FILE:?EXPORTS_FILE non défini}"
 : "${SHARED_GROUP:?SHARED_GROUP non défini}"
+: "${FTP_PRIVATE_IP:?FTP_PRIVATE_IP non défini}"
 
 # ────────────────────────────────────────────────────────────────
 # 1. LVM pour /srv/www
@@ -98,7 +99,7 @@ force_local_data_ssl=YES
 pasv_enable=YES
 pasv_min_port=40000
 pasv_max_port=40100
-pasv_address=$(curl -s ifconfig.me)
+pasv_address=$FTP_PRIVATE_IP
 pam_service_name=vsftpd
 userlist_enable=NO
 EOF
