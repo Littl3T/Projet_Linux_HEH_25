@@ -143,6 +143,29 @@ systemctl restart named
 echo "✅ Zones DNS installées et signées dans $ZONE_DIR (serial $SERIAL)."
 
 # ────────────────────────────────────────────────────────────────
+# 2.5. Configuration du pare-feu pour DNS
+# ────────────────────────────────────────────────────────────────
+echo "[+] Configuration du pare-feu pour DNS"
+
+# S'assure que firewalld tourne
+if ! systemctl is-active --quiet firewalld; then
+  echo "ℹ️  Démarrage de firewalld…"
+  systemctl enable --now firewalld
+fi
+
+# Ajoute le service DNS (53/TCP+UDP)
+if ! firewall-cmd --permanent --list-services | grep -qw dns; then
+  firewall-cmd --permanent --add-service=dns
+  echo "✅ Règle DNS ajoutée (service=dns)"
+else
+  echo "ℹ️  Le service DNS est déjà autorisé."
+fi
+
+# Recharge la configuration
+firewall-cmd --reload
+echo "✅ Pare-feu mis à jour pour DNS."
+
+# ────────────────────────────────────────────────────────────────
 # 3. Installation et configuration de Chrony (NTP)
 # ────────────────────────────────────────────────────────────────
 echo "[+] Installation de Chrony"
