@@ -31,6 +31,13 @@ export NTP_PRIVATE_IP="10.42.0.37"
 export FTP_HOSTNAME="web-ftp-01"
 export FTP_PRIVATE_IP="10.42.0.87"
 ###################################
+# 6.  Samba                      #
+###################################
+export SHARED_FOLDER="/srv/share"
+export SMB_CONF="/etc/samba/smb.conf"
+export EXPORTS_FILE="/etc/exports"
+export SHARED_GROUP="publicshare"
+###################################
 # 6.  Backend server (mysql)      #
 ###################################
 export BACKEND_HOSTNAME="mysql-01"
