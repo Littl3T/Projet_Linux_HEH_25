@@ -22,6 +22,10 @@ export ZONE_DIR="/srv/dns-zones"
 export WEB_HOSTNAME="Server1"
 export WEB_PRIVATE_IP="10.42.0.87"
 ###################################
+# 4.  ntp server (chrony)         #
+###################################
+export NTP_PRIVATE_IP="10.42.0.37"
+###################################
 # 5.  FTP server (vsftpd)         #
 ###################################
 export FTP_HOSTNAME="Server1"
@@ -38,20 +42,12 @@ export CA_PRIVATE_IP="10.0.1.6"
 export CA_PUBLIC_IP="198.51.100.50"
 export CA_PORT="9000"
 ###################################
-# 7.  Database (MariaDB)          #
+# 7.  Database (Mysql)            #
 ###################################
 export DB_HOSTNAME="db-01"
 export DB_PRIVATE_IP="10.0.1.7"
 export DB_PUBLIC_IP=""
 export DB_PORT="3306"
-###################################
-# 8.  Security Group identifiers  #
-###################################
-export SG_DNS="sg-dns"
-export SG_WEB="sg-web"
-export SG_FTP="sg-ftp"
-export SG_CA="sg-ca"
-export SG_BASTION="sg-bastion"
 ###################################
 # 9.  Constant ports              #
 ###################################

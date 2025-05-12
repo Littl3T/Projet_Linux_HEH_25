@@ -1,24 +1,40 @@
 #!/bin/bash
 set -euo pipefail
 
-# === 🔧 Variables à modifier si besoin ===
-DNS_IP="172.31.5.243"
-DOMAIN="tomananas.lan"
-NTP_SERVER="172.31.5.243"
-ROOT_DEFAULT_PASSWORD="Tomval03+-"
+
+# ────────────────────────────────────────────────────────────────
+# 0. Chargement des variables d'environnement
+# ────────────────────────────────────────────────────────────────
+if [ ! -f "setup_env.sh" ]; then
+  echo "❌ setup_env.sh introuvable. Crée-le avec ces variables :"
+  echo "   DNS_PRIVATE_IP, PROJ_DOMAIN, NTP_PRIVATE_IP"
+  exit 1
+fi
+source setup_env.sh
+
+#   enlève tout \r traînant dans tes variables
+for var in DNS_PRIVATE_IP PROJ_DOMAIN NTP_PRIVATE_IP; do
+  eval "$var"="${!var//$'\r'/}"
+done
+
+: "\${DNS_PRIVATE_IP:?}"
+: "\${PROJ_DOMAIN:?}"
+: "\${NTP_PRIVATE_IP:?}"
 
 # === 🧠 Début du script ===
-
-# Définition du hostname (interactif avec valeur par défaut)
+# Définition du hostname
 read -rp "🖥️  Entrez le hostname souhaité: " NEW_HOSTNAME
 NEW_HOSTNAME=${NEW_HOSTNAME}
+# Définition du password
+read -rp "🖥️  Entrez le mot de passe souhaité: " ROOT_DEFAULT_PASSWORD
+ROOT_DEFAULT_PASSWORD=${ROOT_DEFAULT_PASSWORD}
 
 echo "[+] Définition du hostname : $NEW_HOSTNAME"
 sudo hostnamectl set-hostname "$NEW_HOSTNAME"
 
 # Configuration DNS (/etc/resolv.conf)
-echo "[+] Configuration DNS pour rejoindre le domaine $DOMAIN"
-echo -e "nameserver $DNS_IP\nnameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+echo "[+] Configuration DNS pour rejoindre le PROJ_DOMAINe $PROJ_DOMAIN"
+echo -e "nameserver $DNS_PRIVATE_IP\nnameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
 
 # === Configuration NTP (chrony) ===
 echo "[+] Installation et configuration du client NTP (chrony)"
@@ -27,7 +43,7 @@ sudo dnf install -y chrony
 # Configuration complète du fichier chrony.conf
 sudo tee /etc/chrony.conf > /dev/null <<EOF
 # Use the private NTP server (Chrony server internal IP in AWS ntp-01)
-server $NTP_SERVER iburst
+server $NTP_PRIVATE_IP iburst
 
 # Step the system clock if the offset is too large (up to 3 times)
 makestep 1.0 3
