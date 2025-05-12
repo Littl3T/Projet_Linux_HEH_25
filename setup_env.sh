@@ -37,3 +37,8 @@ export SHARED_FOLDER="/srv/share"
 export SMB_CONF="/etc/samba/smb.conf"
 export EXPORTS_FILE="/etc/exports"
 export SHARED_GROUP="publicshare"
+###################################
+# 6.  Backend server (mysql)      #
+###################################
+export BACKEND_HOSTNAME="mysql-01"
+export BACKEND_PRIVATE_IP="10.42.0.170"
