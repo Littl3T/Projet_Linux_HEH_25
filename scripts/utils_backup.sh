@@ -2,46 +2,33 @@
 
 set -euo pipefail
 
-# === General Configuration ===
-DATE=$(date +%F)
-BACKUP_HOME="/home/backup"
-BACKUP_DIR="$BACKUP_HOME/backups/$DATE"
-REMOTE_USER="backup"
-SSH_KEY="$BACKUP_HOME/.ssh/id_backup"
-
-# === Hostnames ===
-WEB_HOST="web-ftp-01.tomananas.lan"
-DNS_HOST="dns-ntp-02.tomananas.lan"
-DB_HOST="mysql-mail-04.tomananas.lan"
-
-# === Files to back up per host ===
-WEB_FILES=(/etc/httpd/sites-available/ /srv/www/)
-DNS_FILES=(/etc/named.conf /var/named/)
-DB_DUMP="$BACKUP_DIR/${DB_HOST%%.*}-mysql-$DATE.sql.gz"
-
 # Load variables from setup_env.sh file
-if [ ! -f "/root/setup_env.sh" ]; then
+if [ ! -f "/home/backup/scripts/setup_env.sh" ]; then
   echo "❌ setup_env.sh file not found. Create one with the necessary variables."
   exit 1
 else
-  source /root/setup_env.sh
+  source /home/backup/scripts/setup_env.sh
 fi
 
 # Required environment variables
-: "${NFS_PRIVATE_IP:?NFS_PRIVATE_IP is not set}"
-: "${SHARED_FOLDER:?SHARED_FOLDER is not set}"
-: "${MOUNT_ROOT:?MOUNT_ROOT is not set}"
-: "${MOUNT_NAME:?MOUNT_NAME is not set}"
-: "${TIMEOUT:?TIMEOUT is not set}"
-: "${AUTO_MASTER:?AUTO_MASTER is not set}"
-: "${AUTO_MAP:?AUTO_MAP is not set}"
+: "${BACKUP_HOME:?BACKUP_HOME is not set}"
+: "${REMOTE_USER:?REMOTE_USER is not set}"
+: "${SSH_KEY:?SSH_KEY is not set}"
+: "${WEB_HOST:?WEB_HOST is not set}"
+: "${DNS_HOST:?DNS_HOST is not set}"
+: "${DB_HOST:?DB_HOST is not set}"
+: "${WEB_FILES:?WEB_FILES is not set}"
+: "${DNS_FILES:?DNS_FILES is not set}"
+: "${DNS_PRIVATE_IP:?DNS_PRIVATE_IP is not set}"
+
+# === General Configuration ===
+DATE=$(date +%F)
+BACKUP_DIR="$BACKUP_HOME/backups/$DATE"
+DB_DUMP="$BACKUP_DIR/${DB_HOST%%.*}-mysql-$DATE.sql.gz"
 
 # === Prepare backup directory ===
 mkdir -p "$BACKUP_DIR"
 chown backup:backup "$BACKUP_DIR"
-
-# DNS fix (AWS context)
-echo -e "nameserver 172.31.5.243\nnameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
 
 # === Remote backup function ===
 backup_host() {

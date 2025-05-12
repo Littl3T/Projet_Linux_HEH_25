@@ -210,6 +210,14 @@ systemctl restart chronyd
 
 echo "✅ Chrony configuré en serveur NTP pour $PRIVATE_SUBNET_CIDR."
 
+
+# ────────────────────────────────────────────────────────────────
+# 4. Droits d'accès pour le user backup
+# ────────────────────────────────────────────────────────────────
+echo "[+] Ajout des droits d'accès pour le user backup"
+sudo setfacl -m u:backup:r /etc/named.conf
+sudo setfacl -R -m u:backup:rx /var/named
+
 # ────────────────────────────────────────────────────────────────
 # Fin
 # ────────────────────────────────────────────────────────────────

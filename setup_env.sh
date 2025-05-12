@@ -56,3 +56,11 @@ export AUTO_MAP="/etc/auto.nfs"
 ###################################
 export BACKUP_HOSTNAME="admin-backup-01"
 export BACKUP_PRIVATE_IP="10.42.0.113"
+export BACKUP_HOME="/home/backup"
+export REMOTE_USER="backup"
+export SSH_KEY="$BACKUP_HOME/scripts/labsuser.pem"
+export WEB_HOST="${WEB_HOSTNAME}.${PROJ_DOMAIN}"
+export DNS_HOST="${DNS_HOSTNAME}.${PROJ_DOMAIN}"
+export DB_HOST="${BACKEND_HOSTNAME}.${PROJ_DOMAIN}"
+export WEB_FILES=(/etc/httpd/sites-available/ /srv/www/)
+export DNS_FILES=(/etc/named.conf /var/named/)

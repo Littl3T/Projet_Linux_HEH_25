@@ -113,6 +113,10 @@ grep -q '^IncludeOptional sites-enabled' /etc/httpd/conf/httpd.conf \
 
 systemctl enable --now httpd
 
+echo "[+] Ajout des droits d'accès pour le user backup"
+sudo setfacl -R -m u:backup:rx /etc/httpd/sites-available
+sudo setfacl -R -m u:backup:rx /srv/www
+
 # ────────────────────────────────────────────────────────────────
 # 3. Samba + NFS share
 # ────────────────────────────────────────────────────────────────
