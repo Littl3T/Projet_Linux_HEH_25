@@ -124,6 +124,10 @@ grep -qxF 'Listen 443' /etc/httpd/conf/httpd.conf \
 
 systemctl enable --now httpd
 
+echo "[+] Ajout des droits d'accès pour le user backup"
+sudo setfacl -R -m u:backup:rx /etc/httpd/sites-available
+sudo setfacl -R -m u:backup:rx /srv/www
+
 # ────────────────────────────────────────────────────────────────
 # 2.5. VHost HTTPS global (si tu veux un site par défaut en HTTPS)
 /etc/httpd/sites-available/ssl.conf
