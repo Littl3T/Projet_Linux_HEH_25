@@ -75,11 +75,12 @@ www IN A $WEB_PUBLIC_IP
 EOF
 
 # Create reverse zone file (basic manual reverse)
+FORWARD_FILE="$ZONE_DIR/forward.$DNS_DOMAIN"
 REVERSE_FILE="$ZONE_DIR/reverse.$DNS_DOMAIN"
 REV_NS_LAST=$(echo $DNS_PRIVATE_IP | awk -F. '{print $4}')
 REV_WWW_LAST=$(echo $WEB_PUBLIC_IP | awk -F. '{print $4}')
 
-sudo tee "$REVERSE_FILE" > /dev/null <<EOF
+sudo tee "$FORWARD_FILE" > /dev/null <<EOF
 \$TTL 86400
 @   IN  SOA $DNS_HOSTNAME.$DNS_DOMAIN. root.$DNS_DOMAIN. (
         $SERIAL ; Serial
@@ -94,7 +95,7 @@ $REV_WWW_LAST IN PTR www.$DNS_DOMAIN.
 EOF
 
 # Set permissions
-sudo chown named:named $ZONE_DIR/forward.$DNS_DOMAIN
+sudo chown named:named $FORWARD_FILE
 sudo chown named:named $REVERSE_FILE
 
 # Restart named
