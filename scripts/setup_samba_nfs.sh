@@ -28,8 +28,7 @@ getent group $SHARED_GROUP >/dev/null || groupadd $SHARED_GROUP
 
 echo "📁 Creating shared folder at $SHARED_FOLDER..."
 mkdir -p "$SHARED_FOLDER"
-chgrp "$SHARED_GROUP" "$SHARED_FOLDER"
-chmod 2775 "$SHARED_FOLDER"
+sudo chmod 777 $SHARED_FOLDER
 
 # === Configure Samba ===
 echo "⚙️ Writing Samba configuration to $SMB_CONF..."
@@ -59,9 +58,8 @@ cat > "$SMB_CONF" <<EOF
   guest ok = yes
   writable = yes
   browseable = yes
-  create mask = 0664
-  directory mask = 2775
-  force group = $SHARED_GROUP
+  create mask = 0666
+  directory mask = 0777
 EOF
 
 echo "🚀 Enabling Samba services..."
