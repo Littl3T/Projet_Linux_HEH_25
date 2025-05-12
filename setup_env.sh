@@ -45,9 +45,14 @@ export BACKEND_PRIVATE_IP="10.42.0.170"
 ###################################
 # 8.  NFS client autofs           #
 ###################################
-NFS_PRIVATE_IP="10.42.0.207"
-MOUNT_ROOT="/mnt/nfs"
-MOUNT_NAME="share"  
-TIMEOUT=60
-AUTO_MASTER="/etc/auto.master"
-AUTO_MAP="/etc/auto.nfs"
+export NFS_PRIVATE_IP="10.42.0.207"
+export MOUNT_ROOT="/mnt/nfs"
+export MOUNT_NAME="share"  
+export TIMEOUT=60
+export AUTO_MASTER="/etc/auto.master"
+export AUTO_MAP="/etc/auto.nfs"
+###################################
+# 8.  Backup                      #
+###################################
+export BACKUP_HOSTNAME="admin-backup-01"
+export BACKUP_PRIVATE_IP="10.42.0.113"
