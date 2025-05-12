@@ -60,3 +60,10 @@ export PORT_WEB_HTTPS="443"
 export PORT_FTP_COMMAND="21"
 export PORT_FTP_PASV_RANGE="${FTP_PASV_MIN}-${FTP_PASV_MAX}"
 export PORT_CA_API="${CA_PORT}"
+###################################
+# 10.  Samba                      #
+###################################
+export SHARED_FOLDER="/srv/share"
+export SMB_CONF="/etc/samba/smb.conf"
+export EXPORTS_FILE="/etc/exports"
+export SHARED_GROUP="publicshare"

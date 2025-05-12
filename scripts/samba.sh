@@ -1,21 +1,15 @@
 #!/bin/bash
 
-# === CONFIGURATION ===
-NETWORK="10.42.0.0/24"
-SHARED_FOLDER="/srv/public"
-SMB_CONF="/etc/samba/smb.conf"
-EXPORTS_FILE="/etc/exports"
-
 # Load variables from setup_env.sh file
-if [ ! -f "setup_env.sh" ]; then
+if [ ! -f "/root/setup_env.sh" ]; then
   echo "❌ setup_env.sh file not found. Create one with the necessary variables."
   exit 1
 else
-  source setup_env.sh
+  source /root/setup_env.sh
 fi
 
 # Required environment variables
-: "${SHARE_NETWORK:?SHARE_NETWORK is not set}"
+: "${PRIVATE_SUBNET_CIDR:?PRIVATE_SUBNET_CIDR is not set}"
 : "${SHARED_FOLDER:?SHARED_FOLDER is not set}"
 : "${SMB_CONF:?SMB_CONF is not set}"
 : "${EXPORTS_FILE:?EXPORTS_FILE is not set}"
@@ -29,10 +23,13 @@ fi
 echo "📦 Installing Samba and NFS packages..."
 yum install -y samba samba-client nfs-utils
 
+echo "👥 Creating group '$SHARED_GROUP'..."
+getent group $SHARED_GROUP >/dev/null || groupadd $SHARED_GROUP
+
 echo "📁 Creating shared folder at $SHARED_FOLDER..."
 mkdir -p "$SHARED_FOLDER"
-chmod 777 "$SHARED_FOLDER"
-chown nobody:nogroup "$SHARED_FOLDER" 2>/dev/null || chown nobody:nobody "$SHARED_FOLDER"
+chgrp "$SHARED_GROUP" "$SHARED_FOLDER"
+chmod 2775 "$SHARED_FOLDER"
 
 # === Configure Samba ===
 echo "⚙️ Writing Samba configuration to $SMB_CONF..."
@@ -41,10 +38,10 @@ cat > "$SMB_CONF" <<EOF
   workgroup = WORKGROUP
   security = user
   map to guest = Bad User
+  guest account = nobody
   server string = Samba + NFS Shared Server
   netbios name = samba-nfs-server
   dns proxy = no
-  guest account = nobody
 
 [www]
   path = /srv/www/%U
@@ -56,16 +53,15 @@ cat > "$SMB_CONF" <<EOF
   directory mask = 0700
 
 [public]
-  path = /srv/public
-  comment = Public shared folder
+  path = $SHARED_FOLDER
+  comment = Public shared folder with group rights
   public = yes
   guest ok = yes
   writable = yes
   browseable = yes
-  force user = nobody
-  force group = nogroup
-  create mask = 0666
-  directory mask = 0777
+  create mask = 0664
+  directory mask = 2775
+  force group = $SHARED_GROUP
 EOF
 
 echo "🚀 Enabling Samba services..."
@@ -73,7 +69,7 @@ systemctl enable --now smb nmb
 
 # === Configure firewall for Samba ===
 if systemctl is-active --quiet firewalld; then
-  echo "🔓 Configuring firewall for Samba..."
+  echo "🔓 Opening firewall for Samba..."
   firewall-cmd --add-service=samba --permanent
   firewall-cmd --reload
 fi
@@ -81,8 +77,8 @@ fi
 # === Configure NFS ===
 echo "🛠️ Writing NFS export to $EXPORTS_FILE..."
 grep -q "^$SHARED_FOLDER" "$EXPORTS_FILE" && \
-  sed -i "s|^$SHARED_FOLDER.*|$SHARED_FOLDER $SHARE_NETWORK(rw,sync,no_root_squash,no_subtree_check)|" "$EXPORTS_FILE" || \
-  echo "$SHARED_FOLDER $SHARE_NETWORK(rw,sync,no_root_squash,no_subtree_check)" >> "$EXPORTS_FILE"
+  sed -i "s|^$SHARED_FOLDER.*|$SHARED_FOLDER $PRIVATE_SUBNET_CIDR(rw,sync,no_root_squash,no_subtree_check)|" "$EXPORTS_FILE" || \
+  echo "$SHARED_FOLDER $PRIVATE_SUBNET_CIDR(rw,sync,no_root_squash,no_subtree_check)" >> "$EXPORTS_FILE"
 
 exportfs -rav
 
@@ -91,7 +87,7 @@ systemctl enable --now nfs-server
 
 # === Configure firewall for NFS ===
 if systemctl is-active --quiet firewalld; then
-  echo "🔓 Configuring firewall for NFS..."
+  echo "🔓 Opening firewall for NFS..."
   firewall-cmd --add-service=nfs --permanent
   firewall-cmd --add-service=mountd --permanent
   firewall-cmd --add-service=rpc-bind --permanent
@@ -102,4 +98,4 @@ SERVER_IP=$(hostname -I | awk '{print $1}')
 echo "✅ Shared folder deployed successfully!"
 echo "📂 Access via:"
 echo "  - Windows (Samba): \\\\$SERVER_IP\\public"
-echo "  - Linux (NFS):     mount $SERVER_IP:/srv/public /mnt"
+echo "  - Linux (NFS):     mount $SERVER_IP:$SHARED_FOLDER /mnt"
