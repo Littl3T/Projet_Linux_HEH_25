@@ -1,10 +1,21 @@
 #!/bin/bash
 
-# === Configuration ===
-WEB_SERVER="172.31.10.47"             # IP privée du serveur web+ftp
-SQL_SERVER="172.31.7.29"              # IP privée du serveur MySQL
-DNS_SERVER="172.31.5.243"             # IP privée du serveur DNS
-PUBLIC_WEB_IP="13.49.221.174"         # IP publique du serveur web
+# Chargement des variables d'environnement
+if [ ! -f "setup_env.sh" ]; then
+  echo "❌ setup_env.sh introuvable. Crée-le avec ces variables :"
+  echo "   WEB_PRIVATE_IP, BACKEND_PRIVATE_IP, DNS_PRIVATE_IP"
+  exit 1
+fi
+source setup_env.sh
+
+#   enlève tout \r traînant dans tes variables
+for var in WEB_PRIVATE_IP BACKEND_PRIVATE_IP DNS_PRIVATE_IP; do
+  eval "$var"="${!var//$'\r'/}"
+done
+
+: "\${WEB_PRIVATE_IP:?}"
+: "\${BACKEND_PRIVATE_IP:?}"
+: "\${DNS_PRIVATE_IP:?}"
 
 SQL_ADMIN_USER="admin"
 SQL_ADMIN_PWD="AdminStrongPwd!2025"
@@ -43,8 +54,8 @@ if [ "$SQL_PWD" != "$SQL_PWD_CONFIRM" ]; then
 fi
 
 # === Création utilisateur sur serveur Web+FTP ===
-echo "📡 Connexion à $WEB_SERVER pour créer l’utilisateur système et le VirtualHost…"
-ssh ec2-user@$WEB_SERVER bash -s <<EOF
+echo "📡 Connexion à $WEB_PRIVATE_IP pour créer l’utilisateur système et le VirtualHost…"
+ssh ec2-user@$WEB_PRIVATE_IP bash -s <<EOF
 echo "[+] Création de l'utilisateur Linux $USERNAME"
 sudo useradd -m "$USERNAME"
 
@@ -132,8 +143,8 @@ EOF
 echo "✅ Utilisateur Linux $USERNAME créé sur le serveur Web/FTP"
 
 # === Création de l’utilisateur SQL ===
-echo "🗄 Connexion à $SQL_SERVER pour créer la base SQL et l’utilisateur…"
-ssh ec2-user@$SQL_SERVER bash -s <<EOF
+echo "🗄 Connexion à $BACKEND_PRIVATE_IP pour créer la base SQL et l’utilisateur…"
+ssh ec2-user@$BACKEND_PRIVATE_IP bash -s <<EOF
 sudo mysql -u$SQL_ADMIN_USER -p$SQL_ADMIN_PWD <<MYSQL
 CREATE DATABASE IF NOT EXISTS \\\`$SQL_DB\\\`;
 CREATE USER IF NOT EXISTS '$SQL_USER'@'%' IDENTIFIED BY '$SQL_PWD';
@@ -147,9 +158,9 @@ echo "✅ Base de données $SQL_DB et utilisateur $SQL_USER créés sur le serve
 # === Déclaration DNS sur serveur DNS ===
 DNS_ZONE_FILE="/var/named/forward.tomananas.lan"
 
-echo "🌐 Connexion à $DNS_SERVER pour ajouter l’entrée DNS $USERNAME.tomananas.lan → $PUBLIC_WEB_IP"
+echo "🌐 Connexion à $DNS_PRIVATE_IP pour ajouter l’entrée DNS $USERNAME.tomananas.lan → $WEB_PRIVATE_IP"
 
-ssh ec2-user@$DNS_SERVER "sudo bash -s" <<EOF
+ssh ec2-user@$DNS_PRIVATE_IP "sudo bash -s" <<EOF
 ZONEDIR="$DNS_ZONE_FILE"
 TMPFILE=\$(mktemp)
 
@@ -167,7 +178,7 @@ sudo awk '
 ' "\$ZONEDIR" > "\$TMPFILE"
 
 # Ajouter la ligne DNS (sans supprimer les autres)
-echo "$USERNAME IN A $PUBLIC_WEB_IP" | sudo tee -a "\$TMPFILE" > /dev/null
+echo "$USERNAME IN A $WEB_PRIVATE_IP" | sudo tee -a "\$TMPFILE" > /dev/null
 
 # Vérifier que la zone est valide
 sudo named-checkzone tomananas.lan "\$TMPFILE"
@@ -183,7 +194,7 @@ sudo chown named:named "\$ZONEDIR"
 sudo systemctl restart named
 EOF
 
-echo "✅ Enregistrement DNS ajouté pour $USERNAME.tomananas.lan → $PUBLIC_WEB_IP"
+echo "✅ Enregistrement DNS ajouté pour $USERNAME.tomananas.lan → $WEB_PRIVATE_IP"
 
 # === Résumé ===
 echo "🎉 Client $USERNAME ajouté avec succès !"
@@ -192,8 +203,8 @@ echo "🖥 FTP (serveur Web) :"
 echo "    Utilisateur : $USERNAME"
 echo "    Mot de passe : (défini manuellement)"
 echo "🗄 MySQL (phpMyAdmin) :"
-echo "    Hôte         : $SQL_SERVER"
+echo "    Hôte         : $BACKEND_PRIVATE_IP"
 echo "    Base         : $SQL_DB"
 echo "    Utilisateur  : $SQL_USER"
 echo "    Mot de passe : $SQL_PWD"
-echo "🌍 DNS : $USERNAME.tomananas.lan → $PUBLIC_WEB_IP"
+echo "🌍 DNS : $USERNAME.tomananas.lan → $WEB_PRIVATE_IP"

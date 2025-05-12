@@ -30,3 +30,8 @@ export NTP_PRIVATE_IP="10.42.0.37"
 ###################################
 export FTP_HOSTNAME="web-ftp-01"
 export FTP_PRIVATE_IP="10.42.0.87"
+###################################
+# 6.  Backend server (mysql)      #
+###################################
+export BACKEND_HOSTNAME="mysql-01"
+export BACKEND_PRIVATE_IP="10.42.0.170"
