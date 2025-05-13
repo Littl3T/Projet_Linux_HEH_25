@@ -32,8 +32,16 @@ echo "[+] Définition du hostname : $NEW_HOSTNAME"
 sudo hostnamectl set-hostname "$NEW_HOSTNAME"
 
 # Configuration DNS (/etc/resolv.conf)
-echo "[+] Configuration DNS pour rejoindre le domaine $PROJ_DOMAIN"
+echo "🧹 Removing existing /etc/resolv.conf..."
+sudo rm -f /etc/resolv.conf
+
+echo "📝 Writing static DNS configuration..."
 echo -e "nameserver $DNS_PRIVATE_IP\nnameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+
+echo "🔒 Making /etc/resolv.conf immutable..."
+sudo chattr +i /etc/resolv.conf
+
+echo "✅ /etc/resolv.conf is now fixed and protected"
 
 # === Configuration NTP (chrony) ===
 echo "[+] Installation et configuration du client NTP (chrony)"
@@ -96,6 +104,9 @@ sudo mkdir -p /home/backup/.ssh
 sudo chmod 700 /home/backup/.ssh
 sudo cp /home/ec2-user/.ssh/authorized_keys /home/backup/.ssh/authorized_keys 
 sudo chown -R backup:backup /home/backup/.ssh
+# === Donner les droits sudo pour pouvoir tar ===
+echo "backup ALL=(ALL) NOPASSWD: /bin/tar" | sudo tee /etc/sudoers.d/backup
+
 
 # === Mot de passe root ===
 echo "[+] Définition du mot de passe root par défaut"
