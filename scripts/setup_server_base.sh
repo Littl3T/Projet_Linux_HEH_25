@@ -146,6 +146,8 @@ sudo tee /etc/cron.d/antivirus-scan > /dev/null <<EOF
 # Syntaxe cron : minute heure jour mois jour_de_semaine utilisateur commande
 0 10,18 * * * root /usr/local/bin/antivirus-scan.sh >> /var/log/antivirus-scan.log 2>&1
 EOF
+sudo systemctl start crond
+sudo systemctl enable crond
 
 echo "✅ Antivirus configuré :"
 echo "   • ClamAV → freshclam (daemon)"
