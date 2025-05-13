@@ -97,15 +97,11 @@ sudo chown -R backup:backup /home/backup/.ssh
 echo "[+] Définition du mot de passe root par défaut"
 echo "root:$ROOT_DEFAULT_PASSWORD" | sudo chpasswd
 
-# === Installation & enregistrement automatique sur Netdata Cloud ===
+# ────────────────────────────────────────────────────────────────
+# Installation & enregistrement automatique sur Netdata Cloud
+# ────────────────────────────────────────────────────────────────
 echo "[+] Installation de Netdata avec inscription sur Netdata Cloud"
-curl -fsSL https://get.netdata.cloud/kickstart.sh \
-  > /tmp/netdata-kickstart.sh && \
-  bash /tmp/netdata-kickstart.sh \
-    --stable-channel \
-    --claim-token qLJ6N91iNhe9fyPhWzVe0AJwnM3895IwOJam2iApYmHgyiDW1qwvK3CT46VZKGPxdHZpppc4EZ6u2ve0Br0zYwZ5sETWCxStRXXbi1lP-eVvsmDzVlAm9VPFYK6Je89BM96SYxY \
-    --claim-rooms 3db515f7-2058-48a3-b3f8-0c0ef773d79f \
-    --claim-url https://app.netdata.cloud
+curl https://get.netdata.cloud/kickstart.sh > /tmp/netdata-kickstart.sh && sh /tmp/netdata-kickstart.sh --stable-channel --claim-token qLJ6N91iNhe9fyPhWzVe0AjWnM3895IwOJam2iApYmHgyiDW1qwvk3CT46VZKGPxdHZpppc4EZ6u2ve0Br0zYwZ5sETWCxStRXXbiI1P-eVvsmDzVlAm9VPFYK6Je89BM96SYxY --claim-rooms 3db515f7-2058-48a3-b3f8-0c0ef773d79f --claim-url https://app.netdata.cloud
 
 echo "[+] Activation du service Netdata"
 systemctl enable --now netdata
