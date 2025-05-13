@@ -56,7 +56,7 @@ remote_restore_tar() {
 
   if [ -f "$archive" ]; then
     echo "🔁 Restoring $label to $target_host..."
-    cat "$archive" | ssh -i "$SSH_KEY" "$REMOTE_USER@$target_host" "sudo tar xzf - -C /"
+    cat "$archive" | ssh -i "$SSH_KEY" "$REMOTE_USER@$target_host" "tar xzf - -C /"
     echo "✅ $label restored to $target_host."
   else
     echo "⚠️ Archive not found: $archive"
@@ -81,7 +81,7 @@ if [ "$RESTORE_DB" = true ]; then
   DB_TARGET=$(ask_target "MySQL")
   if [ -f "$DB_DUMP" ]; then
     echo "🗄️ Restoring MySQL to $DB_TARGET..."
-    gunzip -c "$DB_DUMP" | ssh -i "$SSH_KEY" "$REMOTE_USER@$DB_TARGET" "mysql -u root -p"
+    gunzip -c "$DB_DUMP" | ssh -i "$SSH_KEY" "$REMOTE_USER@$DB_TARGET" "mysql -u admin -p'AdminStrongPwd!2025'"
     echo "✅ MySQL restored to $DB_TARGET."
   else
     echo "⚠️ MySQL dump not found: $DB_DUMP"

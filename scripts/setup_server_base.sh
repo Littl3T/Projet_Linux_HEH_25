@@ -61,6 +61,10 @@ EOF
 # Activer et démarrer chronyd
 sudo systemctl enable --now chronyd
 
+# Configuration de fuseau horaire
+echo "[+] Configuration du fuseau horaire : Europe/Brussels"
+sudo timedatectl set-timezone Europe/Brussels
+
 # Afficher les sources NTP
 sleep 2
 chronyc sources || echo "⚠️ chronyc failed, vérifiez la connectivité NTP"
