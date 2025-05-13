@@ -15,9 +15,9 @@ source /home/backup/scripts/setup_env.sh
 : "${WEB_PRIVATE_IP:?}"
 : "${BACKEND_PRIVATE_IP:?}"
 : "${DNS_PRIVATE_IP:?}"
-: "${BACKUP_HOSTNAME:?}"              # Exemple : backup-01.tomananas.lan
-: "${SSH_KEY:?}"                  # Clé SSH utilisée pour se connecter
-: "${REMOTE_USER:=backup}"        # Nom de l'utilisateur sur le serveur de backup
+: "${BACKUP_HOSTNAME:?}"             
+: "${SSH_KEY:?}"                  
+: "${REMOTE_USER:=backup}"       
 : "${SQL_ADMIN_USER:=admin}"
 
 SQL_DB="${USERNAME}_db"
@@ -28,15 +28,15 @@ SQL_DUMP_NAME="${USERNAME}_${DATE}.sql.gz"
 
 # === Creation du dossier archive ===
 echo "📁 Création du dossier $ARCHIVE_DIR sur le serveur de backup si nécessaire..."
-ssh -i "$SSH_KEY" $REMOTE_USER@$BACKUP_HOSTNAME "mkdir -p '$ARCHIVE_DIR'"
+mkdir -p $ARCHIVE_DIR
 
 # === Étapes sur le serveur Web ===
 echo "📡 Suppression de $USERNAME sur $WEB_PRIVATE_IP..."
 ssh -i "$SSH_KEY" ec2-user@$WEB_PRIVATE_IP bash -s <<EOF
 sudo tar czf "/tmp/$ARCHIVE_NAME" "/srv/www/$USERNAME"
-sudo userdel -r "$USERNAME" || true
 sudo smbpasswd -x "$USERNAME" || true
-sudo rm -f /etc/httpd/sites-available/${USERNAME}*.conf /etc/httpd/sites-enabled/${USERNAME}*.conf
+sudo userdel -r "$USERNAME" || true
+sudo rm -f /etc/httpd/sites-available/${USERNAME}*.conf /etc/httpd/sites-enabled/${USERNAME}*.conf /srv/www/${USERNAME}
 sudo systemctl reload httpd
 EOF
 
@@ -49,12 +49,17 @@ scp -i "$SSH_KEY" ec2-user@$WEB_PRIVATE_IP:/tmp/$ARCHIVE_NAME $REMOTE_USER@$BACK
 ssh -i "$SSH_KEY" ec2-user@$WEB_PRIVATE_IP "sudo rm -f /tmp/$ARCHIVE_NAME"
 
 # === Export SQL depuis le backend ===
-echo "🗄 Dump SQL de $SQL_DB..."
 ssh -i "$SSH_KEY" ec2-user@$BACKEND_PRIVATE_IP bash -s <<EOF
-mysqldump -u "$SQL_ADMIN_USER" -p'AdminStrongPwd!2025' "$SQL_DB" | gzip > "/tmp/$SQL_DUMP_NAME"
-mysql -u "$SQL_ADMIN_USER" -p'AdminStrongPwd!2025' -e "DROP DATABASE IF EXISTS \\\`$SQL_DB\\\`;"
+if mysql -u "$SQL_ADMIN_USER" -p'AdminStrongPwd!2025' -e "USE \\\`$SQL_DB\\\`;" 2>/dev/null; then
+  echo "[+] Dump SQL de $SQL_DB..."
+  mysqldump -u "$SQL_ADMIN_USER" -p'AdminStrongPwd!2025' --databases "$SQL_DB" | gzip > "/tmp/$SQL_DUMP_NAME"
+  mysql -u "$SQL_ADMIN_USER" -p'AdminStrongPwd!2025' -e "DROP DATABASE \\\`$SQL_DB\\\`;"
+else
+  echo "⚠️ Base $SQL_DB introuvable, pas de dump."
+fi
 mysql -u "$SQL_ADMIN_USER" -p'AdminStrongPwd!2025' -e "DROP USER IF EXISTS '$SQL_USER'@'%';"
 EOF
+
 
 # === Transfert du dump SQL vers serveur backup ===
 scp -i "$SSH_KEY" ec2-user@$BACKEND_PRIVATE_IP:/tmp/$SQL_DUMP_NAME $REMOTE_USER@$BACKUP_HOSTNAME:$ARCHIVE_DIR/

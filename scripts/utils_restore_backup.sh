@@ -2,9 +2,9 @@
 
 set -euo pipefail
 
-# === Load environment ===
+# Load variables from setup_env.sh file
 if [ ! -f "/home/backup/scripts/setup_env.sh" ]; then
-  echo "❌ setup_env.sh not found."
+  echo "❌ setup_env.sh file not found. Create one with the necessary variables."
   exit 1
 else
   source /home/backup/scripts/setup_env.sh
