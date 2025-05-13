@@ -1,0 +1,127 @@
+<!-- MONITORING HOME PAGE -->
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Monitoring – tomananas.lan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 3em;
+      margin-bottom: 40px;
+      background: linear-gradient(to right, #00c6ff, #0072ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: pulse 3s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.02); }
+    }
+
+    .container {
+      display: flex;
+      flex-flow: row nowrap;
+      gap: 30px;
+      justify-content: center;
+      align-content: stretch;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      text-align: center;
+      transition: transform 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      width: 350px;
+      height: 250px;
+      display: flex;
+      flex-flow: column nowrap;
+      justify-content: center;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .card h2 {
+      margin-bottom: 10px;
+      font-size: 1.5em;
+    }
+
+    .card p {
+      font-size: 1em;
+      color: #aaa;
+    }
+
+    .icon {
+      font-size: 40px;
+      margin-bottom: 15px;
+      color: #00c6ff;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    footer {
+      margin-top: 50px;
+      font-size: 0.9em;
+      color: #888;
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <h1>Monitoring – tomananas.lan</h1>
+
+  <div class="container">
+    <a href="https://app.netdata.cloud/spaces/tomdeney-space/rooms/all-nodes/dashboards/webserver" target="_blank">
+      <div class="card">
+        <div class="icon"><i class="fas fa-globe"></i></div>
+        <h2>Webserver</h2>
+        <p>Surveillance HTTPD, VSFTPD, NFS, SAMBA</p>
+      </div>
+    </a>
+
+    <a href="https://app.netdata.cloud/spaces/tomdeney-space/rooms/all-nodes/dashboards/backend" target="_blank">
+      <div class="card">
+        <div class="icon"><i class="fas fa-database"></i></div>
+        <h2>Backend</h2>
+        <p>Suivi des services backend critiques mysql</p>
+      </div>
+    </a>
+
+    <a href="https://app.netdata.cloud/spaces/tomdeney-space/rooms/all-nodes/dashboards/dns-ntp" target="_blank">
+      <div class="card">
+        <div class="icon"><i class="fas fa-network-wired"></i></div>
+        <h2>DNS & NTP</h2>
+        <p>Monitoring Bind, Chrony</p>
+      </div>
+    </a>
+  </div>
+
+  <footer>
+    &copy; 2025 – Monitoring par tomananas.lan
+  </footer>
+</body>
+</html>
