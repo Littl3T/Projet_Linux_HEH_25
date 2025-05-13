@@ -11,7 +11,7 @@ if [ ! -f "setup_env.sh" ]; then
 fi
 source setup_env.sh
 
-#   enlève tout \r traînant dans tes variables
+# enlève tout \r traînant dans tes variables
 for var in DNS_PRIVATE_IP PROJ_DOMAIN NTP_PRIVATE_IP; do
   eval "$var"="${!var//$'\r'/}"
 done
@@ -32,19 +32,16 @@ echo "[+] Définition du hostname : $NEW_HOSTNAME"
 sudo hostnamectl set-hostname "$NEW_HOSTNAME"
 
 # Configuration DNS (/etc/resolv.conf)
-echo "🧹 Removing existing /etc/resolv.conf..."
+echo "🧹 Suppression de l'ancien /etc/resolv.conf..."
 sudo rm -f /etc/resolv.conf
-
-echo "📝 Writing static DNS configuration..."
+echo "📝 Rédaction d'une configuration DNS statique..."
 echo -e "nameserver $DNS_PRIVATE_IP\nnameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
-
-echo "🔒 Making /etc/resolv.conf immutable..."
+echo "🔒 Protection de /etc/resolv.conf en écriture..."
 sudo chattr +i /etc/resolv.conf
-
-echo "✅ /etc/resolv.conf is now fixed and protected"
+echo "✅ /etc/resolv.conf est protégé."
 
 # === Configuration NTP (chrony) ===
-echo "[+] Installation et configuration du client NTP (chrony)"
+echo "[+] Installation et configuration de Chrony"
 sudo dnf install -y chrony
 
 # Configuration complète du fichier chrony.conf
@@ -92,10 +89,71 @@ sudo systemctl enable --now firewalld
 
 if ! sudo firewall-cmd --list-services | grep -qw ssh; then
     sudo firewall-cmd --permanent --add-service=ssh
-    echo "✅ Règle SSH ajoutée au firewall"
+    echo "✅ Règle SSH ajoutée"
 fi
 
 sudo firewall-cmd --reload
+
+# === Antivirus (ClamAV + Linux Malware Detect) ===
+# Demande des chemins à scanner
+read -rp "🛡️  Entrez les chemins à scanner (séparés par des espaces) : " SCAN_PATHS
+echo "[+] Dossiers à vérifier : $SCAN_PATHS"
+
+# 1. Installation de ClamAV
+echo "[+] Installation de ClamAV"
+sudo dnf install -y clamav clamav-update
+
+echo "[+] Configuration de freshclam (mise à jour des signatures)"
+# décommente la ligne Example pour activer freshclam
+sudo sed -i 's/^Example/#Example/' /etc/freshclam.conf
+# mise à jour immédiate
+sudo freshclam
+sudo systemctl enable --now clamav-freshclam
+
+# 2. Installation non-interactive de Linux Malware Detect
+echo "[+] Installation de Linux Malware Detect (LMD)"
+cd /opt
+sudo dnf install -y wget unzip cronie                  # s’assure que wget/unzip/cron sont là
+sudo wget -q https://www.rfxn.com/downloads/maldetect-current.tar.gz
+sudo tar zxvf maldetect-current.tar.gz
+DIR=$(tar tzf maldetect-current.tar.gz | head -1 | cut -d'/' -f1)
+cd "$DIR"
+
+echo "[+] Installation non-interactive de LMD (valeurs par défaut)"
+yes '' | sudo ./install.sh
+
+echo "[+] Configuration de LMD pour passer par ClamAV"
+sudo sed -i 's/^scanner clamav$/scanner clamav --stdout/' /usr/local/maldetect/conf.maldet
+
+# 3. Création du script de scan unifié
+echo "[+] Création du script de scan /usr/local/bin/antivirus-scan.sh"
+sudo tee /usr/local/bin/antivirus-scan.sh > /dev/null <<EOF
+#!/usr/bin/env bash
+# Mise à jour des signatures ClamAV
+freshclam --quiet
+
+# Scan ClamAV (via démon, multithread, ne remonte que les infectés)
+clamdscan --fdpass --multiscan --infected $SCAN_PATHS
+
+# Scan LMD
+maldet --quiet --scan-all $SCAN_PATHS
+EOF
+sudo chmod +x /usr/local/bin/antivirus-scan.sh
+
+# 4. Planification 2×/jour dans /etc/cron.d
+echo "[+] Planification du scan 2×/jour dans /etc/cron.d/antivirus-scan"
+sudo tee /etc/cron.d/antivirus-scan > /dev/null <<EOF
+# Syntaxe cron : minute heure jour mois jour_de_semaine utilisateur commande
+0 10,18 * * * root /usr/local/bin/antivirus-scan.sh >> /var/log/antivirus-scan.log 2>&1
+EOF
+sudo systemctl start crond
+sudo systemctl enable crond
+
+echo "✅ Antivirus configuré :"
+echo "   • ClamAV → freshclam (daemon)"
+echo "   • LMD      → installé et configuré"
+echo "   • Scan     → /usr/local/bin/antivirus-scan.sh"
+echo "   • Planifié → 10:00 et 18:00 tous les jours"
 
 # === Configuration du user de backup ===
 echo "[+] Configuration du user de backup"
@@ -109,7 +167,7 @@ echo "backup ALL=(ALL) NOPASSWD: /bin/tar" | sudo tee /etc/sudoers.d/backup
 
 
 # === Mot de passe root ===
-echo "[+] Définition du mot de passe root par défaut"
+echo "[+] Définition du mot de passe root"
 echo "root:$ROOT_DEFAULT_PASSWORD" | sudo chpasswd
 
 # ────────────────────────────────────────────────────────────────
@@ -127,12 +185,10 @@ firewall-cmd --reload
 
 cat <<INFO
 
-✅ Netdata installé et enregistré automatiquement sur Netdata Cloud !
+✅ Netdata installé et inscrit sur Netdata Cloud !
+Pour changer de token ou d'espace :  
+  modifiez simplement les arguments --claim-xxxx dans ce script.
 
-Si jamais vous voulez changer de token ou de Space,  
-modifiez simplement les valeurs de --claim-xxxx dans ce script.
+✅ Mise en place terminée pour $NEW_HOSTNAME
 
 INFO
-
-
-echo "✅ Setup de base terminé pour $NEW_HOSTNAME"

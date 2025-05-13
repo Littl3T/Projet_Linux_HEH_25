@@ -105,22 +105,6 @@ sudo chown "$USERNAME:$USERNAME" "$USERDIR/index.html"
 echo "[+] Préparation des répertoires de vhosts"
 sudo mkdir -p /etc/httpd/sites-available /etc/httpd/sites-enabled
 
-# --- HTTP vhost ---
-echo "[+] Création du VirtualHost HTTP"
-sudo tee /etc/httpd/sites-available/$USERNAME.conf > /dev/null <<VH
-<VirtualHost *:80>
-    ServerName $USERNAME.tomananas.lan
-    DocumentRoot $USERDIR
-    <Directory "$USERDIR">
-        Options -Indexes +FollowSymLinks
-        AllowOverride All
-        Require all granted
-    </Directory>
-    ErrorLog /var/log/httpd/${USERNAME}_error.log
-    CustomLog /var/log/httpd/${USERNAME}_access.log combined
-</VirtualHost>
-VH
-
 # --- HTTPS vhost ---
 echo "[+] Création du VirtualHost HTTPS"
 # ajoute Listen 443 si pas déjà présent
@@ -132,8 +116,8 @@ sudo tee /etc/httpd/sites-available/${USERNAME}-ssl.conf > /dev/null <<VHSSL
     ServerName $USERNAME.tomananas.lan
     DocumentRoot $USERDIR
     SSLEngine on
-    SSLCertificateFile      /etc/pki/tls/certs/vsftpd.pem
-    SSLCertificateKeyFile   /etc/pki/tls/private/vsftpd.key
+    SSLCertificateFile      /etc/pki/tls/certs/wildcard.crt.pem
+    SSLCertificateKeyFile   /etc/pki/tls/private/wildcard.key.pem
     <Directory "$USERDIR">
         Options -Indexes +FollowSymLinks
         AllowOverride All
