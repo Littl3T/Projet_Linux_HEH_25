@@ -163,6 +163,9 @@ fi
 # Ajoute le service DNS (53/TCP+UDP)
 if ! firewall-cmd --permanent --list-services | grep -qw dns; then
   firewall-cmd --permanent --add-service=dns
+  firewall-cmd --add-service=ntp --permanent
+sudo firewall-cmd --reload
+
   echo "✅ Règle DNS ajoutée (service=dns)"
 else
   echo "ℹ️  Le service DNS est déjà autorisé."

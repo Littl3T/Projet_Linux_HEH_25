@@ -157,9 +157,6 @@ ln -sf /etc/httpd/sites-available/ssl.conf /etc/httpd/sites-enabled/ssl.conf
 echo "[+] Installation Samba et NFS"
 dnf install -y samba samba-client nfs-utils
 
-echo "[+] Création du groupe '$SHARED_GROUP'"
-getent group "$SHARED_GROUP" >/dev/null || groupadd "$SHARED_GROUP"
-
 echo "[+] Création du dossier public $SHARED_FOLDER"
 mkdir -p "$SHARED_FOLDER"
 chmod 2775 "$SHARED_FOLDER"

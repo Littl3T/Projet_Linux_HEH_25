@@ -23,9 +23,6 @@ fi
 echo "📦 Installing Samba and NFS packages..."
 yum install -y samba samba-client nfs-utils
 
-echo "👥 Creating group '$SHARED_GROUP'..."
-getent group $SHARED_GROUP >/dev/null || groupadd $SHARED_GROUP
-
 echo "📁 Creating shared folder at $SHARED_FOLDER..."
 mkdir -p "$SHARED_FOLDER"
 sudo chmod 777 $SHARED_FOLDER
