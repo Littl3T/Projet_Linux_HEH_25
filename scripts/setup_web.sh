@@ -129,27 +129,143 @@ sudo setfacl -R -m u:backup:rx /etc/httpd/sites-available
 sudo setfacl -R -m u:backup:rx /srv/www
 
 # ────────────────────────────────────────────────────────────────
-# 2.5. VHost HTTPS global (si tu veux un site par défaut en HTTPS)
-/etc/httpd/sites-available/ssl.conf
-cat > /etc/httpd/sites-available/ssl.conf <<EOF
-<VirtualHost *:443>
-    DocumentRoot "$MOUNT_POINT"
-    SSLEngine on
-    SSLCertificateFile    /etc/pki/tls/certs/vsftpd.pem
-    SSLCertificateKeyFile /etc/pki/tls/private/vsftpd.key
+# 2.5. VHost HTTP & HTTPS de fallback (catch-all)
+# ────────────────────────────────────────────────────────────────
+echo "[+] Création du site de fallback (404) dans /srv/www/default"
+sudo mkdir -p /srv/www/default
+cat <<'HTML' | sudo tee /srv/www/default/index.html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>tomananas.lan – Hébergement et Services</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #005a9c;
+      color: #fff;
+      padding: 2em 1em;
+      text-align: center;
+    }
+    main {
+      max-width: 800px;
+      margin: 2em auto;
+      background: #fff;
+      padding: 2em;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 8px;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 2em;
+      color: white;
+    }
+    ul.services {
+      list-style: none;
+      padding: 0;
+    }
+    ul.services li {
+      margin: 0.5em 0;
+      padding-left: 1.5em;
+      position: relative;
+    }
+    ul.services li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #28a745;
+    }
+    footer {
+      text-align: center;
+      padding: 1em;
+      font-size: 0.9em;
+      color: #666;
+    }
+    a {
+      color: #005a9c;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Bienvenue sur <strong>tomananas.lan</strong></h1>
+    <p>Votre plateforme d’hébergement interne sécurisée</p>
+  </header>
+  <main>
+    <p>Nous proposons une offre complète pour vos services Linux :</p>
+    <ul class="services">
+      <li>Hébergement FTP/FTPS sécurisé</li>
+      <li>Sites web en HTTP &amp; HTTPS</li>
+      <li>Partage de fichiers via Samba &amp; NFS</li>
+      <li>Bases de données MySQL dédiées</li>
+      <li>Antivirus &amp; pare-feu configuré</li>
+      <li>Reaction et alertes rapides via Monitoring temps-réel de notre côté administrateurs (Netdata)</li>
+      <li>Backups automatisées et restaurations possibles</li>
+    </ul>
+    <p>Pour toute demande de création de site ou d’accès, contactez-nous :</p>
+    <ul>
+      <li><a href="mailto:tom.deneyer@std.heh.be">tom.deneyer@std.heh.be</a></li>
+      <li><a href="mailto:anastasiia.kozlenko@std.heh.be">anastasiia.kozlenko@std.heh.be</a></li>
+    </ul>
+  </main>
+  <footer>
+    &copy; 2025 tomananas.lan — Tous droits réservés
+  </footer>
+</body>
+</html>
+HTML
+sudo chmod -R 755 /srv/www/default
 
-    <Directory "$MOUNT_POINT">
-        Options -Indexes +FollowSymLinks
-        AllowOverride All
+echo "[+] Configuration du fallback HTTP (000-default.conf)"
+cat <<EOF | sudo tee /etc/httpd/sites-available/000-default.conf
+<VirtualHost *:80>
+    ServerName fallback.${PROJ_DOMAIN}
+    DocumentRoot /srv/www/default
+
+    <Directory "/srv/www/default">
+        Options -Indexes
+        AllowOverride None
         Require all granted
     </Directory>
 
-    ErrorLog  /var/log/httpd/ssl_error.log
-    CustomLog /var/log/httpd/ssl_access.log combined
+    ErrorDocument 404 /index.html
 </VirtualHost>
 EOF
+sudo ln -sf /etc/httpd/sites-available/000-default.conf \
+            /etc/httpd/sites-enabled/000-default.conf
 
-ln -sf /etc/httpd/sites-available/ssl.conf /etc/httpd/sites-enabled/ssl.conf
+echo "[+] Configuration du fallback HTTPS (000-default-ssl.conf)"
+cat <<EOF | sudo tee /etc/httpd/sites-available/000-default-ssl.conf
+<VirtualHost *:443>
+    ServerName fallback.${PROJ_DOMAIN}
+    DocumentRoot /srv/www/default
+
+    SSLEngine on
+    SSLCertificateFile    /etc/pki/tls/certs/wildcard.crt.pem
+    SSLCertificateKeyFile /etc/pki/tls/private/wildcard.key.pem
+
+    <Directory "/srv/www/default">
+        Options -Indexes
+        AllowOverride None
+        Require all granted
+    </Directory>
+
+    ErrorDocument 404 /index.html
+</VirtualHost>
+EOF
+sudo ln -sf /etc/httpd/sites-available/000-default-ssl.conf \
+            /etc/httpd/sites-enabled/000-default-ssl.conf
+sudo systemctl reload httpd
 
 # ────────────────────────────────────────────────────────────────
 # 3. Samba + NFS share
