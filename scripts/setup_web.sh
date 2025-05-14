@@ -23,38 +23,62 @@ source /root/setup_env.sh
 : "${FTP_PRIVATE_IP:?FTP_PRIVATE_IP non défini}"
 
 # ────────────────────────────────────────────────────────────────
-# 1. LVM pour /srv/www
+# 1. LVM pour /srv/www et /srv/share (avec quotas)
 # ────────────────────────────────────────────────────────────────
 echo "[+] Installation de lvm2"
 dnf install -y lvm2
 
-DEVICES=(/dev/nvme1n1 /dev/nvme2n1)
-VG_NAME="srv_vg"
-LV_NAME="srv_lv"
-MOUNT_POINT="/srv/www"
-FSTAB="/etc/fstab"
+# Disques dédiés
+DEV_WWW="/dev/nvme1n1"
+DEV_SHARE="/dev/nvme2n1"
 
-echo "[+] Création des PVs sur ${DEVICES[*]}"
-for dev in "${DEVICES[@]}"; do
+# PVs
+echo "[+] Création des PVs : $DEV_WWW → srv_vg, $DEV_SHARE → share_vg"
+for dev in "$DEV_WWW" "$DEV_SHARE"; do
   pvs --noheadings -o pv_name | grep -qw "$dev" || pvcreate -ff -y "$dev"
 done
 
-echo "[+] Création du VG '$VG_NAME'"
-vgs --noheadings -o vg_name | grep -qw "$VG_NAME" || vgcreate "$VG_NAME" "${DEVICES[@]}"
+# VG + LV pour /srv/www
+VG_WWW="srv_vg"
+LV_WWW="srv_lv"
+MOUNT_POINT="/srv/www"
+echo "[+] Création VG $VG_WWW sur $DEV_WWW"
+vgs --noheadings -o vg_name | grep -qw "$VG_WWW" || vgcreate "$VG_WWW" "$DEV_WWW"
+echo "[+] Création LV $LV_WWW (100%FREE) → $MOUNT_POINT"
+lvs --noheadings -n "$LV_WWW" "$VG_WWW" &>/dev/null || \
+  lvcreate -n "$LV_WWW" -l 100%FREE "$VG_WWW"
+echo "[+] Formatage ext4 de /dev/$VG_WWW/$LV_WWW"
+blkid -o value -s TYPE "/dev/$VG_WWW/$LV_WWW" &>/dev/null || \
+  mkfs.ext4 -F "/dev/$VG_WWW/$LV_WWW"
 
-echo "[+] Création du LV '$LV_NAME' (100%FREE)"
-lvs --noheadings -o lv_name "$VG_NAME" | grep -qw "$LV_NAME" \
-  || lvcreate -n "$LV_NAME" -l 100%FREE "$VG_NAME"
+# VG + LV pour /srv/share
+VG_SHARE="share_vg"
+LV_SHARE="share_lv"
+SHARE_MNT="$SHARED_FOLDER"
+echo "[+] Création VG $VG_SHARE sur $DEV_SHARE"
+vgs --noheadings -o vg_name | grep -qw "$VG_SHARE" || vgcreate "$VG_SHARE" "$DEV_SHARE"
+echo "[+] Création LV $LV_SHARE (100%FREE) → $SHARE_MNT"
+lvs --noheadings -n "$LV_SHARE" "$VG_SHARE" &>/dev/null || \
+  lvcreate -n "$LV_SHARE" -l 100%FREE "$VG_SHARE"
+echo "[+] Formatage ext4 de /dev/$VG_SHARE/$LV_SHARE avec quotas"
+blkid -o value -s TYPE "/dev/$VG_SHARE/$LV_SHARE" &>/dev/null || \
+  mkfs.ext4 -F -O quota /dev/$VG_SHARE/$LV_SHARE
 
-echo "[+] Formatage ext4 de /dev/$VG_NAME/$LV_NAME"
-blkid -o value -s TYPE "/dev/$VG_NAME/$LV_NAME" 2>/dev/null \
-  || mkfs.ext4 -F "/dev/$VG_NAME/$LV_NAME"
-
-echo "[+] Montage permanent de /srv/www"
-mkdir -p "$MOUNT_POINT"
-grep -qxF "/dev/$VG_NAME/$LV_NAME $MOUNT_POINT ext4 defaults 0 2" "$FSTAB" \
-  || echo "/dev/$VG_NAME/$LV_NAME $MOUNT_POINT ext4 defaults 0 2" >> "$FSTAB"
+# Montage
+echo "[+] Montage permanent de $MOUNT_POINT et $SHARE_MNT"
+mkdir -p "$MOUNT_POINT" "$SHARE_MNT"
+grep -qxF "/dev/$VG_WWW/$LV_WWW $MOUNT_POINT ext4 defaults 0 2" /etc/fstab \
+  || echo "/dev/$VG_WWW/$LV_WWW $MOUNT_POINT ext4 defaults 0 2" >> /etc/fstab
+grep -qxF "/dev/$VG_SHARE/$LV_SHARE $SHARE_MNT ext4 defaults,usrquota,grpquota 0 2" /etc/fstab \
+  || echo "/dev/$VG_SHARE/$LV_SHARE $SHARE_MNT ext4 defaults,usrquota,grpquota 0 2" >> /etc/fstab
 mount -a
+
+# Initialisation des quotas sur /srv/share
+echo "[+] Initialisation des quotas sur $SHARE_MNT"
+quotacheck -fgum "$SHARE_MNT"
+quotaon "$SHARE_MNT"
+echo "✅ /srv/www et /srv/share sont prêts (quotas actifs sur $SHARE_MNT)"
+
 
 # ────────────────────────────────────────────────────────────────
 # 2. FTPS + HTTPD + PHP
@@ -133,67 +157,23 @@ sudo setfacl -R -m u:backup:rx /srv/www
 # ────────────────────────────────────────────────────────────────
 echo "[+] Création du site de fallback (404) dans /srv/www/default"
 sudo mkdir -p /srv/www/default
-cat <<'HTML' | sudo tee /srv/www/default/index.html
+sudo tee /srv/www/default/index.html > /dev/null <<'HTML'
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <title>tomananas.lan – Hébergement et Services</title>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f5f7fa;
-      color: #333;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background: #005a9c;
-      color: #fff;
-      padding: 2em 1em;
-      text-align: center;
-    }
-    main {
-      max-width: 800px;
-      margin: 2em auto;
-      background: #fff;
-      padding: 2em;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      border-radius: 8px;
-    }
-    h1 {
-      margin-top: 0;
-      font-size: 2em;
-      color: white;
-    }
-    ul.services {
-      list-style: none;
-      padding: 0;
-    }
-    ul.services li {
-      margin: 0.5em 0;
-      padding-left: 1.5em;
-      position: relative;
-    }
-    ul.services li:before {
-      content: "✓";
-      position: absolute;
-      left: 0;
-      color: #28a745;
-    }
-    footer {
-      text-align: center;
-      padding: 1em;
-      font-size: 0.9em;
-      color: #666;
-    }
-    a {
-      color: #005a9c;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; margin: 0; padding: 0; }
+    header { background: #005a9c; color: #fff; padding: 2em 1em; text-align: center; }
+    main { max-width: 800px; margin: 2em auto; background: #fff; padding: 2em; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 8px; }
+    h1 { margin-top: 0; font-size: 2em; color: white; }
+    ul.services { list-style: none; padding: 0; }
+    ul.services li { margin: 0.5em 0; padding-left: 1.5em; position: relative; }
+    ul.services li:before { content: "✓"; position: absolute; left: 0; color: #28a745; }
+    footer { text-align: center; padding: 1em; font-size: 0.9em; color: #666; }
+    a { color: #005a9c; text-decoration: none; }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -205,29 +185,27 @@ cat <<'HTML' | sudo tee /srv/www/default/index.html
     <p>Nous proposons une offre complète pour vos services Linux :</p>
     <ul class="services">
       <li>Hébergement FTP/FTPS sécurisé</li>
-      <li>Sites web en HTTP &amp; HTTPS</li>
-      <li>Partage de fichiers via Samba &amp; NFS</li>
+      <li>Sites web en HTTP & HTTPS</li>
+      <li>Partage de fichiers via Samba & NFS</li>
       <li>Bases de données MySQL dédiées</li>
-      <li>Antivirus &amp; pare-feu configuré</li>
-      <li>Reaction et alertes rapides via Monitoring temps-réel de notre côté administrateurs (Netdata)</li>
-      <li>Backups automatisées et restaurations possibles</li>
+      <li>Antivirus & pare-feu configuré</li>
+      <li>Alertes temps-réel via Netdata</li>
+      <li>Backups automatisées et restaurations</li>
     </ul>
-    <p>Pour toute demande de création de site ou d’accès, contactez-nous :</p>
+    <p>Pour toute demande, contactez :</p>
     <ul>
       <li><a href="mailto:tom.deneyer@std.heh.be">tom.deneyer@std.heh.be</a></li>
       <li><a href="mailto:anastasiia.kozlenko@std.heh.be">anastasiia.kozlenko@std.heh.be</a></li>
     </ul>
   </main>
-  <footer>
-    &copy; 2025 tomananas.lan — Tous droits réservés
-  </footer>
+  <footer>&copy; 2025 tomananas.lan — Tous droits réservés</footer>
 </body>
 </html>
 HTML
 sudo chmod -R 755 /srv/www/default
 
 echo "[+] Configuration du fallback HTTP (000-default.conf)"
-cat <<EOF | sudo tee /etc/httpd/sites-available/000-default.conf
+sudo tee /etc/httpd/sites-available/000-default.conf > /dev/null <<CONF
 <VirtualHost *:80>
     ServerName fallback.${PROJ_DOMAIN}
     DocumentRoot /srv/www/default
@@ -240,12 +218,12 @@ cat <<EOF | sudo tee /etc/httpd/sites-available/000-default.conf
 
     ErrorDocument 404 /index.html
 </VirtualHost>
-EOF
+CONF
 sudo ln -sf /etc/httpd/sites-available/000-default.conf \
             /etc/httpd/sites-enabled/000-default.conf
 
 echo "[+] Configuration du fallback HTTPS (000-default-ssl.conf)"
-cat <<EOF | sudo tee /etc/httpd/sites-available/000-default-ssl.conf
+sudo tee /etc/httpd/sites-available/000-default-ssl.conf > /dev/null <<CONF
 <VirtualHost *:443>
     ServerName fallback.${PROJ_DOMAIN}
     DocumentRoot /srv/www/default
@@ -262,9 +240,11 @@ cat <<EOF | sudo tee /etc/httpd/sites-available/000-default-ssl.conf
 
     ErrorDocument 404 /index.html
 </VirtualHost>
-EOF
+CONF
 sudo ln -sf /etc/httpd/sites-available/000-default-ssl.conf \
             /etc/httpd/sites-enabled/000-default-ssl.conf
+
+echo "[+] Reload Apache pour prendre en compte le fallback"
 sudo systemctl reload httpd
 
 # ────────────────────────────────────────────────────────────────
