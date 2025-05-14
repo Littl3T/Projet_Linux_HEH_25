@@ -105,6 +105,17 @@ GRANT ALL PRIVILEGES ON *.* TO '$REMOTE_ADMIN_USER'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF
 
+# Crée le fichier .my.cnf avec les droits appropriés
+echo "[+] Création d'un fichier .my.cnf"
+sudo tee /root/.my.cnf > /dev/null <<EOF
+[client]
+user=$MYSQL_ADMIN_USER
+password=$MYSQL_ADMIN_PWD
+EOF
+
+# Applique les bonnes permissions (lecture seule pour root)
+sudo chmod 600 /root/.my.cnf
+
 echo "[+] Configuration réseau (bind-address)…"
 cat >> /etc/my.cnf.d/server.cnf <<CNF
 
