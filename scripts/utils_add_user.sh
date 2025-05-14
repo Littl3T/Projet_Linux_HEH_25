@@ -16,6 +16,8 @@ done
 : "${WEB_PRIVATE_IP:?}"
 : "${BACKEND_PRIVATE_IP:?}"
 : "${DNS_PRIVATE_IP:?}"
+: "${SOFT_LIMIT:?}"
+: "${HARD_LIMIT:?}"
 
 SSH_KEY="/root/labsuser.pem"
 
@@ -57,6 +59,10 @@ echo "📡 Connexion à $WEB_PRIVATE_IP pour créer l’utilisateur et les vhost
 ssh -i "$SSH_KEY" ec2-user@"$WEB_PRIVATE_IP" bash -s <<EOF
 echo "[+] Création de l'utilisateur Linux $USERNAME"
 sudo useradd -m "$USERNAME"
+
+echo "[+] Définition des quotas pour $USERNAME"
+sudo setquota -u "$USERNAME" $SOFT_LIMIT $HARD_LIMIT 0 0 /srv/www
+sudo setquota -u "$USERNAME" $SOFT_LIMIT $HARD_LIMIT 0 0 /srv/share
 
 echo "[+] Définition du mot de passe FTP"
 echo "$USERNAME:$FTP_PWD" | sudo chpasswd

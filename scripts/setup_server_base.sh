@@ -116,11 +116,11 @@ cd /opt
 sudo dnf install -y wget unzip cronie                  # s’assure que wget/unzip/cron sont là
 sudo wget -q https://www.rfxn.com/downloads/maldetect-current.tar.gz
 sudo tar zxvf maldetect-current.tar.gz
-DIR=$(tar tzf maldetect-current.tar.gz | head -1 | cut -d'/' -f1)
+DIR=$(tar tzf maldetect-current.tar.gz | head -1 | cut -d'/' -f1) || true
 cd "$DIR"
 
 echo "[+] Installation non-interactive de LMD (valeurs par défaut)"
-yes '' | sudo ./install.sh
+sudo ./install.sh
 
 echo "[+] Configuration de LMD pour passer par ClamAV"
 sudo sed -i 's/^scanner clamav$/scanner clamav --stdout/' /usr/local/maldetect/conf.maldet

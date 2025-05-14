@@ -64,3 +64,9 @@ export DNS_HOST="${DNS_HOSTNAME}.${PROJ_DOMAIN}"
 export DB_HOST="${BACKEND_HOSTNAME}.${PROJ_DOMAIN}"
 export WEB_FILES=(/etc/httpd/sites-available/ /srv/www/)
 export DNS_FILES=(/etc/named.conf /var/named/)
+###################################
+# 9.  Quotas                      #
+###################################
+export SOFT_LIMIT=50000
+export HARD_LIMIT=60000
+
