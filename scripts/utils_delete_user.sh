@@ -29,6 +29,8 @@ SQL_DUMP_NAME="${USERNAME}_${DATE}.sql.gz"
 # === Creation du dossier archive ===
 echo "📁 Création du dossier $ARCHIVE_DIR sur le serveur de backup si nécessaire..."
 mkdir -p $ARCHIVE_DIR
+sudo chown -R backup:backup $ARCHIVE_DIR
+
 
 # === Étapes sur le serveur Web ===
 echo "📡 Suppression de $USERNAME sur $WEB_PRIVATE_IP..."
@@ -36,13 +38,12 @@ ssh -i "$SSH_KEY" ec2-user@$WEB_PRIVATE_IP bash -s <<EOF
 sudo tar czf "/tmp/$ARCHIVE_NAME" "/srv/www/$USERNAME"
 sudo smbpasswd -x "$USERNAME" || true
 sudo userdel -r "$USERNAME" || true
-sudo rm -f /etc/httpd/sites-available/${USERNAME}*.conf /etc/httpd/sites-enabled/${USERNAME}*.conf /srv/www/${USERNAME}
+sudo rm -rf /etc/httpd/sites-available/${USERNAME}*.conf /etc/httpd/sites-enabled/${USERNAME}*.conf /srv/www/${USERNAME}
 sudo systemctl reload httpd
 EOF
 
 # === Transfert de l'archive web vers serveur backup ===
 echo "📦 Transfert de l’archive web vers $BACKUP_HOSTNAME..."
-ssh -i "$SSH_KEY" $REMOTE_USER@$BACKUP_HOSTNAME "mkdir -p '$ARCHIVE_DIR'"
 scp -i "$SSH_KEY" ec2-user@$WEB_PRIVATE_IP:/tmp/$ARCHIVE_NAME $REMOTE_USER@$BACKUP_HOSTNAME:$ARCHIVE_DIR/
 
 # === Suppression de l’archive temporaire côté Web ===
@@ -59,7 +60,6 @@ else
 fi
 mysql -u "$SQL_ADMIN_USER" -p'AdminStrongPwd!2025' -e "DROP USER IF EXISTS '$SQL_USER'@'%';"
 EOF
-
 
 # === Transfert du dump SQL vers serveur backup ===
 scp -i "$SSH_KEY" ec2-user@$BACKEND_PRIVATE_IP:/tmp/$SQL_DUMP_NAME $REMOTE_USER@$BACKUP_HOSTNAME:$ARCHIVE_DIR/

@@ -68,25 +68,14 @@ sudo chown -R "$USERNAME:$USERNAME" "$USERDIR"
 
 # Vhosts
 sudo mkdir -p /etc/httpd/sites-available /etc/httpd/sites-enabled
-sudo tee /etc/httpd/sites-available/$USERNAME.conf > /dev/null <<VH
-<VirtualHost *:80>
-    ServerName $USERNAME.tomananas.lan
-    DocumentRoot $USERDIR
-    <Directory "$USERDIR">
-        Options -Indexes +FollowSymLinks
-        AllowOverride All
-        Require all granted
-    </Directory>
-</VirtualHost>
-VH
 
 sudo tee /etc/httpd/sites-available/${USERNAME}-ssl.conf > /dev/null <<VHSSL
 <VirtualHost *:443>
     ServerName $USERNAME.tomananas.lan
     DocumentRoot $USERDIR
     SSLEngine on
-    SSLCertificateFile /etc/pki/tls/certs/vsftpd.pem
-    SSLCertificateKeyFile /etc/pki/tls/private/vsftpd.key
+    SSLCertificateFile      /etc/pki/tls/certs/wildcard.crt.pem
+    SSLCertificateKeyFile   /etc/pki/tls/private/wildcard.key.pem
     <Directory "$USERDIR">
         Options -Indexes +FollowSymLinks
         AllowOverride All
