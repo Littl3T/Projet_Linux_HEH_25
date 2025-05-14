@@ -17,7 +17,6 @@ fi
 : "${SSH_KEY:?}"
 : "${REMOTE_USER:=backup}"
 : "${SQL_ADMIN_USER:=admin}"
-SQL_ADMIN_PWD="AdminStrongPwd!2025"
 
 # === Argument obligatoire ===
 USERNAME="$1"
@@ -96,7 +95,7 @@ EOF
 # === Base de données ===
 echo "🗄️ Restauration SQL sur $BACKEND_PRIVATE_IP..."
 ssh -i "$SSH_KEY" ec2-user@$BACKEND_PRIVATE_IP bash -s <<EOF
-mysql -u"$SQL_ADMIN_USER" -p"$SQL_ADMIN_PWD" <<SQL
+sudo mysql  <<SQL
 DROP USER IF EXISTS '$SQL_USER'@'%';
 CREATE USER '$SQL_USER'@'%' IDENTIFIED BY '$SQL_PWD';
 CREATE DATABASE IF NOT EXISTS \\\`$SQL_DB\\\`;
@@ -104,7 +103,7 @@ GRANT ALL PRIVILEGES ON \\\`$SQL_DB\\\`.* TO '$SQL_USER'@'%';
 FLUSH PRIVILEGES;
 SQL
 
-gunzip -c /tmp/$SQL_FILE | mysql -u"$SQL_ADMIN_USER" -p"$SQL_ADMIN_PWD" "$SQL_DB"
+gunzip -c /tmp/$SQL_FILE | sudo mysql "$SQL_DB"
 EOF
 
 # === DNS ===

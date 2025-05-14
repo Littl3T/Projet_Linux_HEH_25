@@ -17,8 +17,6 @@ done
 : "${BACKEND_PRIVATE_IP:?}"
 : "${DNS_PRIVATE_IP:?}"
 
-SQL_ADMIN_USER="admin"
-SQL_ADMIN_PWD="AdminStrongPwd!2025"
 SSH_KEY="/root/labsuser.pem"
 
 # === Vérification des arguments ===
@@ -155,7 +153,7 @@ EOF
 # === Création de l’utilisateur SQL ===
 echo "🗄 Connexion à $BACKEND_PRIVATE_IP pour créer la base SQL et l’utilisateur…"
 ssh -i "$SSH_KEY" ec2-user@"$BACKEND_PRIVATE_IP" bash -s <<EOF
-sudo mysql -u"$SQL_ADMIN_USER" -p"$SQL_ADMIN_PWD" <<MYSQL
+sudo mysql <<MYSQL
 CREATE DATABASE IF NOT EXISTS \\\`$SQL_DB\\\`;
 CREATE USER IF NOT EXISTS '$SQL_USER'@'%' IDENTIFIED BY '$SQL_PWD';
 GRANT ALL PRIVILEGES ON \\\`$SQL_DB\\\`.* TO '$SQL_USER'@'%';
@@ -218,7 +216,7 @@ cat <<SUMMARY
       Hôte        : $BACKEND_PRIVATE_IP
       Base        : $SQL_DB
       Utilisateur : $SQL_USER
-      Mot de passe: $SQL_PWD
+      Mot de passe: (votre saisie)
   • HTTP  : http://$USERNAME.tomananas.lan
   • HTTPS : https://$USERNAME.tomananas.lan
   • DNS   : $USERNAME.tomananas.lan → $WEB_PRIVATE_IP

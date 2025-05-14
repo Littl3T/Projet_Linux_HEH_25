@@ -51,14 +51,14 @@ ssh -i "$SSH_KEY" ec2-user@$WEB_PRIVATE_IP "sudo rm -f /tmp/$ARCHIVE_NAME"
 
 # === Export SQL depuis le backend ===
 ssh -i "$SSH_KEY" ec2-user@$BACKEND_PRIVATE_IP bash -s <<EOF
-if mysql -u "$SQL_ADMIN_USER" -p'AdminStrongPwd!2025' -e "USE \\\`$SQL_DB\\\`;" 2>/dev/null; then
+if sudo mysql -e "USE \\\`$SQL_DB\\\`;" 2>/dev/null; then
   echo "[+] Dump SQL de $SQL_DB..."
-  mysqldump -u "$SQL_ADMIN_USER" -p'AdminStrongPwd!2025' --databases "$SQL_DB" | gzip > "/tmp/$SQL_DUMP_NAME"
-  mysql -u "$SQL_ADMIN_USER" -p'AdminStrongPwd!2025' -e "DROP DATABASE \\\`$SQL_DB\\\`;"
+  sudo mysqldump --databases "$SQL_DB" | gzip > "/tmp/$SQL_DUMP_NAME"
+  sudo mysql -e "DROP DATABASE \\\`$SQL_DB\\\`;"
 else
   echo "⚠️ Base $SQL_DB introuvable, pas de dump."
 fi
-mysql -u "$SQL_ADMIN_USER" -p'AdminStrongPwd!2025' -e "DROP USER IF EXISTS '$SQL_USER'@'%';"
+sudo mysql -e "DROP USER IF EXISTS '$SQL_USER'@'%';"
 EOF
 
 # === Transfert du dump SQL vers serveur backup ===
