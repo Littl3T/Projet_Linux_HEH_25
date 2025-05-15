@@ -84,7 +84,7 @@ echo "✅ /srv/www et /srv/share sont prêts (quotas actifs sur $SHARE_MNT)"
 # 2. FTPS + HTTPD + PHP
 # ────────────────────────────────────────────────────────────────
 echo "[+] Installation vsftpd, httpd, PHP, firewalld"
-dnf install -y vsftpd openssl firewalld httpd php php-mysqlnd php-mbstring php-xml php-cli php-common
+dnf install -y vsftpd openssl firewalld httpd php php-mysqlnd php-mbstring php-xml php-cli php-common mod_ssl
 
 echo "[+] Activation et ouverture des ports HTTP/FTP"
 systemctl enable --now firewalld
@@ -129,6 +129,10 @@ userlist_enable=NO
 EOF
 
 systemctl enable --now vsftpd
+
+echo "[+] Activation du module SSL (mod_ssl)"
+sed -i '/^LoadModule ssl_module modules\/mod_ssl\.so/d' /etc/httpd/conf.modules.d/00-ssl.conf
+echo "LoadModule ssl_module modules/mod_ssl.so" >> /etc/httpd/conf.modules.d/00-ssl.conf
 
 echo "[+] Activation Apache + inclusion vhosts"
 mkdir -p /etc/httpd/sites-available /etc/httpd/sites-enabled
