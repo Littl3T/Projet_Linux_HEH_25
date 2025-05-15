@@ -56,7 +56,7 @@ remote_restore_tar() {
 
   if [ -f "$archive" ]; then
     echo "🔁 Restoring $label to $target_host..."
-    cat "$archive" | ssh -i "$SSH_KEY" "$REMOTE_USER@$target_host" "tar xzf - -C /"
+    cat "$archive" | ssh -i "$SSH_KEY" "ec2-user@$target_host" "sudo tar xzf - -C /"
     echo "✅ $label restored to $target_host."
   else
     echo "⚠️ Archive not found: $archive"
