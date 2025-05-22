@@ -8,13 +8,15 @@ Our team is made of two Bac2 Student in CyberSecurity option
 
 ## Hardware configuration
 Our project is based on multiple virtual machines located in AWS Cloud (EC2)  
-Here is a list of our virtual machines  
-- DNS Server
+Here is a list of our virtual machines.
+- DNS + NTP Server
 - FTP + Web Server
-- Time + ... Server
+- Backend Server
+- Admin + Backup Server
+- VPN for cloud access (using public ip elastic)
 
 ## Deployment
-...
+All setup scripts are totaly usable for a complete deployment of all services covered. The setup_server_base.sh must be used first then the others setup.
 
 ## Project structure
 Here is how files are saved into thi repository, scripts, configs and docs... 
@@ -31,12 +33,22 @@ Here is how files are saved into thi repository, scripts, configs and docs...
     ├── configs/
     │   ├── dns/
     │   │   └── named.conf
+    │   │   └── forward.tomananas.lan
+    │   │   └── reverse.tomananas.lan
     │   ├── web/
     │   │   └── httpd.conf
     │   └── ftp/
     │       └── vsftpd.conf
+    │   └── samba/
+    │       └── smb.conf
+    │   └── ntp/
+    │       └── server_chronny.conf
+    │       └── client_chronny.conf
+    │   └── firewall/
+    │       └── allservers...
     ├── docs/
-    │   ├── ressources.md
+    │   ├── netdata_dashboards/
+    │   ├── netdata_emails_alerts/
 ```
 ### Environment Script
 `setup_env.sh` is a bash script exporting all environments variables used in all other scripts, such as:   
@@ -52,7 +64,6 @@ Bash scripts can be executed on any virtual machines used during the projet.
 Types of script:   
 - setup_*service* : Full configuration of a *service* specified after the `setup_`  
 - utils_*action* : Scripts used for specific automated *action* specified after the `utils_`
-- automation_*action* : Scripts used by automaticly making an *action* not run by hand. specified after the `automation_`
 
 ### Configs
 All saved configuration files are saved into /configs/*service*  
@@ -87,6 +98,3 @@ Environment variables exported must be *UPPER_SNAKE_CASE* convention. For instan
 ### Git/Github
 Commit must follow regular angular commit convention, please follow the link bellow for futher informations  
 [Angular Commit Convention](https://www.conventionalcommits.org/en/v1.0.0-beta.4/)
-
-### Reports & work to send
-(...) later ?

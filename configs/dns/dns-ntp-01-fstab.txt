@@ -1,0 +1,3 @@
+UUID=262237e1-363f-446e-9ae5-fec571a21e27     /           xfs    defaults,noatime  1   1
+UUID=4C68-05A7        /boot/efi       vfat    defaults,noatime,uid=0,gid=0,umask=0077,shortname=winnt,x-systemd.automount 0 2
+/dev/dns_vg/zone_lv /srv/dns-zones ext4 defaults 0 2

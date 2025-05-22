@@ -1,0 +1,14 @@
+public
+  target: default
+  icmp-block-inversion: no
+  interfaces:
+  sources:
+  services: dhcpv6-client http https mdns mountd nfs rpc-bind samba ssh
+  ports: 21/tcp 40000-40100/tcp 19999/tcp
+  protocols:
+  forward: yes
+  masquerade: no
+  forward-ports:
+  source-ports:
+  icmp-blocks:
+  rich rules:

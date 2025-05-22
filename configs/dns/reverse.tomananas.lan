@@ -1,0 +1,12 @@
+[root@dns-ntp-01 ec2-user]# cat /srv/dns-zones/reverse.tomananas.lan
+$TTL 86400
+@   IN  SOA dns-ntp-01.tomananas.lan. root.tomananas.lan. (
+        2025051202 ; Serial
+        3600    ; Refresh
+        1800    ; Retry
+        604800  ; Expire
+        86400 ) ; Minimum TTL
+
+    IN  NS  dns-ntp-01.tomananas.lan.
+37 IN PTR dns-ntp-01.tomananas.lan.
+87 IN PTR www.tomananas.lan.

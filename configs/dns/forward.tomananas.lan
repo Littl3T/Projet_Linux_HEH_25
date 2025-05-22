@@ -1,0 +1,26 @@
+[root@dns-ntp-01 ec2-user]# cat /srv/dns-zones/forward.tomananas.lan
+$TTL 86400
+@   IN  SOA dns-ntp-01.tomananas.lan. root.tomananas.lan. (
+        2025051246 ; Serial
+        3600    ; Refresh
+        1800    ; Retry
+        604800  ; Expire
+        86400 ) ; Minimum TTL
+
+    IN  NS  dns-ntp-01.tomananas.lan.
+www           IN A 10.42.0.87
+web-ftp-01        IN A     10.42.0.87
+dns-ntp-01        IN A     10.42.0.37
+admin-backup-01   IN A     10.42.0.113
+mysql-01          IN A     10.42.0.170
+
+monitoring IN A 10.42.0.87
+testRestore9 IN A 10.42.0.87
+testRestore10 IN A 10.42.0.87
+testRestore11 IN A 10.42.0.87
+testRestore13 IN A 10.42.0.87
+testSQL3 IN A 10.42.0.87
+testQuotas2 IN A 10.42.0.87
+tsiom IN A 10.42.0.87
+demo IN A 10.42.0.87
+MrRoland IN A 10.42.0.87

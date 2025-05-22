@@ -1,0 +1,13 @@
+[ec2-user@web-ftp-01 ~]$ cat /etc/httpd/sites-available/MrRoland-ssl.conf
+<VirtualHost *:443>
+    ServerName MrRoland.tomananas.lan
+    DocumentRoot /srv/www/MrRoland
+    SSLEngine on
+    SSLCertificateFile      /etc/pki/tls/certs/wildcard.crt.pem
+    SSLCertificateKeyFile   /etc/pki/tls/private/wildcard.key.pem
+    <Directory "/srv/www/MrRoland">
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
